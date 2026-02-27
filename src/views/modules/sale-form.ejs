@@ -1,0 +1,255 @@
+<div class="page-header">
+  <div>
+    <h1>Nova Venda</h1>
+    <p>Registrar venda de produtos</p>
+  </div>
+  <a href="/vendas" class="btn btn-secondary">Ver Vendas</a>
+</div>
+
+<% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert alert-success">
+    ✅ Venda registrada com sucesso! Você pode registrar uma nova venda abaixo.
+  </div>
+<% } %>
+
+<form method="POST" action="/vendas" class="form-card">
+
+  <!-- Customer -->
+  <div class="form-group" style="max-width: 480px;">
+    <label>Cliente *</label>
+    <select name="customerId" required>
+      <option value="">Selecione um cliente...</option>
+      <% customers.forEach(c => { %>
+        <option value="<%= c.id %>"><%= c.name %></option>
+      <% }); %>
+    </select>
+  </div>
+
+  <hr>
+  <h3 style="font-size:var(--font-size-sm);font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);margin-bottom:var(--spacing-lg);">Itens da Venda</h3>
+
+  <div class="table-wrapper" style="margin-bottom:var(--spacing-lg);">
+    <table id="sale-table">
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th style="width:90px;">Qtd.</th>
+          <th style="width:150px;">Preço Unit.</th>
+          <th style="width:130px;" class="text-right">Subtotal</th>
+          <th style="width:50px;"></th>
+        </tr>
+      </thead>
+      <tbody id="sale-items">
+        <tr class="item-row">
+          <td>
+            <select name="productIds" class="product-select" required>
+              <option value="">Selecione um produto...</option>
+              <% products.forEach(p => { %>
+                <option value="<%= p.id %>" data-price="<%= p.priceUnit %>">
+                  <%= p.name %><% if (p.isReturnable) { %> 🔄<% } %>
+                </option>
+              <% }); %>
+            </select>
+          </td>
+          <td>
+            <input type="number" name="quantities" step="1" min="1"
+              placeholder="0" required class="qty-input"
+              style="width:76px;text-align:center;">
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="color:var(--text-muted);font-size:var(--font-size-sm);white-space:nowrap;">R$</span>
+              <input type="number" step="0.01" min="0" name="prices"
+                placeholder="—" class="price-input"
+                style="width:104px;" readonly>
+            </div>
+          </td>
+          <td class="text-right currency" style="font-weight:600;">
+            R$ <span class="subtotal">0,00</span>
+          </td>
+          <td>
+            <button type="button" class="btn btn-sm btn-danger remove-item">✕</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <button type="button" id="add-item" class="btn btn-secondary btn-sm" style="margin-bottom:var(--spacing-xl);">
+    + Adicionar Produto
+  </button>
+
+  <hr>
+
+  <!-- Bottom: Payment + Totals -->
+  <div style="display:flex;gap:var(--spacing-2xl);flex-wrap:wrap;align-items:flex-start;">
+
+    <!-- Left: Payment + Submit -->
+    <div style="flex:1;min-width:220px;">
+      <div class="form-group">
+        <label>Método de Pagamento *</label>
+        <select name="paymentMethod" id="paymentMethod" required style="max-width:280px;">
+          <option value="DINHEIRO">💰 Dinheiro</option>
+          <option value="PIX">📱 Pix</option>
+          <option value="CARTÃO">💳 Cartão</option>
+        </select>
+      </div>
+
+      <!-- Card fee — shown only when CARTÃO is selected -->
+      <div class="form-group" id="card-fee-group" style="display:none;max-width:280px;">
+        <label>Taxa do Cartão (%)</label>
+        <input type="number" name="cardFeeRate" id="cardFeeRate"
+          step="0.01" min="0" max="20" placeholder="ex: 2.5" value="0"
+          style="max-width:140px;">
+        <div class="form-hint">A taxa será acrescentada ao total</div>
+      </div>
+
+      <div class="form-actions" style="margin-top:var(--spacing-xl);">
+        <button type="submit" class="btn btn-success btn-lg">✅ Confirmar Venda</button>
+        <a href="/dashboard" class="btn btn-secondary">Cancelar</a>
+      </div>
+    </div>
+
+    <!-- Right: Totals -->
+    <div class="sales-totals" style="flex:0 0 320px;margin:0;">
+      <h3>Resumo</h3>
+      <div class="total-row">
+        <span class="total-label">Subtotal</span>
+        <span class="currency total-value" id="subtotal">R$ 0,00</span>
+      </div>
+      <div class="total-row" style="align-items:center;">
+        <label class="total-label" for="discount" style="margin:0;">Desconto (%)</label>
+        <input type="number" name="discount" id="discount"
+          step="0.01" min="0" max="100" placeholder="0" value="0"
+          style="width:70px;text-align:right;padding:4px 8px;">
+      </div>
+      <div class="total-row">
+        <span class="total-label">Desconto (R$)</span>
+        <span class="currency total-value" id="discount-value">R$ 0,00</span>
+      </div>
+      <!-- Deposit row — visible only if returnable items present -->
+      <div class="total-row" id="deposit-row" style="display:none;">
+        <span class="total-label">🔄 Depósito garrafas</span>
+        <span class="currency total-value" id="deposit-value">R$ 0,00</span>
+      </div>
+      <!-- Card fee row — visible only when CARTÃO -->
+      <div class="total-row" id="card-fee-row" style="display:none;">
+        <span class="total-label" id="card-fee-label">Taxa cartão (0%)</span>
+        <span class="currency total-value" id="card-fee-value">R$ 0,00</span>
+      </div>
+      <div class="total-row grand-total">
+        <span class="total-label">TOTAL</span>
+        <span class="currency total-value" id="total">R$ 0,00</span>
+      </div>
+    </div>
+
+  </div>
+
+</form>
+
+<style>
+.price-input[readonly] {
+  background: #f1f5f9;
+  color: var(--text-primary);
+  cursor: default;
+  font-weight: 600;
+}
+</style>
+
+<!-- Product data: JSON, no EJS inside script blocks -->
+<script id="product-data" type="application/json"><%- JSON.stringify(products.map(function(p){ return { id: p.id, price: p.priceUnit, returnable: p.isReturnable }; })) %></script>
+<script id="deposit-value-data" type="application/json"><%= depositValue %></script>
+
+<script>
+var PRODUCT_DATA = {};
+JSON.parse(document.getElementById('product-data').textContent).forEach(function(p) {
+  PRODUCT_DATA[p.id] = { price: p.price, returnable: p.returnable };
+});
+var DEPOSIT_PER_UNIT = parseFloat(document.getElementById('deposit-value-data').textContent) || 5;
+
+// Add item row
+document.getElementById('add-item').addEventListener('click', function() {
+  var tbody = document.getElementById('sale-items');
+  var row = document.querySelector('.item-row').cloneNode(true);
+  row.querySelectorAll('input').forEach(function(el) { el.value = ''; });
+  row.querySelectorAll('select').forEach(function(el) { el.value = ''; });
+  row.querySelector('.subtotal').textContent = '0,00';
+  attachRowEvents(row);
+  tbody.appendChild(row);
+});
+
+function attachRowEvents(row) {
+  row.querySelector('.product-select').addEventListener('change', function() {
+    var pid = this.value;
+    var priceInput = row.querySelector('.price-input');
+    if (pid && PRODUCT_DATA[pid]) {
+      priceInput.value = parseFloat(PRODUCT_DATA[pid].price).toFixed(2);
+    } else {
+      priceInput.value = '';
+    }
+    updateTotals();
+  });
+  row.querySelector('.qty-input').addEventListener('input', updateTotals);
+  row.querySelector('.remove-item').addEventListener('click', function() {
+    if (document.querySelectorAll('.item-row').length > 1) {
+      row.remove();
+      updateTotals();
+    }
+  });
+}
+
+attachRowEvents(document.querySelector('.item-row'));
+
+// Show/hide card fee group
+document.getElementById('paymentMethod').addEventListener('change', function() {
+  var isCard = this.value === 'CARTÃO';
+  document.getElementById('card-fee-group').style.display = isCard ? 'block' : 'none';
+  document.getElementById('card-fee-row').style.display  = isCard ? 'flex' : 'none';
+  updateTotals();
+});
+
+document.getElementById('discount').addEventListener('input', updateTotals);
+document.getElementById('cardFeeRate').addEventListener('input', updateTotals);
+
+function updateTotals() {
+  var subtotal       = 0;
+  var depositTotal   = 0;
+
+  document.querySelectorAll('.item-row').forEach(function(row) {
+    var pid   = row.querySelector('.product-select').value;
+    var qty   = Math.max(0, parseInt(row.querySelector('.qty-input').value, 10) || 0);
+    var price = parseFloat(row.querySelector('.price-input').value) || 0;
+    var sub   = qty * price;
+    row.querySelector('.subtotal').textContent = sub.toFixed(2).replace('.', ',');
+    subtotal += sub;
+
+    if (pid && PRODUCT_DATA[pid] && PRODUCT_DATA[pid].returnable) {
+      depositTotal += qty * DEPOSIT_PER_UNIT;
+    }
+  });
+
+  var discountPct = parseFloat(document.getElementById('discount').value) || 0;
+  var discountVal = (subtotal * discountPct) / 100;
+  var afterDiscount = subtotal - discountVal;
+
+  var isCard      = document.getElementById('paymentMethod').value === 'CARTÃO';
+  var cardFeeRate = isCard ? (parseFloat(document.getElementById('cardFeeRate').value) || 0) : 0;
+  var cardFeeVal  = (afterDiscount * cardFeeRate) / 100;
+
+  var total = afterDiscount + cardFeeVal + depositTotal;
+
+  // Update display
+  document.getElementById('subtotal').textContent       = 'R$ ' + subtotal.toFixed(2).replace('.', ',');
+  document.getElementById('discount-value').textContent = 'R$ ' + discountVal.toFixed(2).replace('.', ',');
+  document.getElementById('card-fee-label').textContent = 'Taxa cartão (' + cardFeeRate.toFixed(1) + '%)';
+  document.getElementById('card-fee-value').textContent = 'R$ ' + cardFeeVal.toFixed(2).replace('.', ',');
+  document.getElementById('deposit-value').textContent  = 'R$ ' + depositTotal.toFixed(2).replace('.', ',');
+  document.getElementById('total').textContent          = 'R$ ' + total.toFixed(2).replace('.', ',');
+
+  // Show/hide deposit row
+  var depRow = document.getElementById('deposit-row');
+  depRow.style.display = depositTotal > 0 ? 'flex' : 'none';
+}
+
+updateTotals();
+</script>

@@ -1,0 +1,153 @@
+<!-- Page Header -->
+<div class="page-header">
+  <h1>Relatórios</h1>
+  <p style="margin: 0; color: var(--text-secondary);">Análise de vendas e desempenho</p>
+</div>
+
+<!-- Date Filter Bar -->
+<div class="filter-bar">
+  <div class="filter-group">
+    <label for="filterStartDate">Data Inicial</label>
+    <input type="date" id="filterStartDate" name="startDate" value="<%= new Date().toISOString().split('T')[0] %>">
+  </div>
+
+  <div class="filter-group">
+    <label for="filterEndDate">Data Final</label>
+    <input type="date" id="filterEndDate" name="endDate" value="<%= new Date().toISOString().split('T')[0] %>">
+  </div>
+
+  <div class="filter-group">
+    <button class="btn btn-primary" onclick="applyDateFilter()">🔍 Filtrar</button>
+  </div>
+</div>
+
+<!-- Quick Filter Buttons -->
+<div class="quick-filters">
+  <button class="quick-filter-btn active" onclick="setQuickFilter('today')">📅 Hoje</button>
+  <button class="quick-filter-btn" onclick="setQuickFilter('yesterday')">⏪ Ontem</button>
+  <button class="quick-filter-btn" onclick="setQuickFilter('week')">📆 Esta Semana</button>
+  <button class="quick-filter-btn" onclick="setQuickFilter('month')">📞 Este Mês</button>
+</div>
+
+<!-- Reports Grid -->
+<section class="dashboard-grid">
+  <!-- Daily Summary -->
+  <div class="card">
+    <h3 style="margin: 0 0 var(--spacing-lg) 0;">💰 Receita Total</h3>
+    <div style="font-size: 28px; font-weight: 700; color: var(--color-primary); margin-bottom: var(--spacing-md);">
+      R$ <%= profit && profit.totalRevenue ? profit.totalRevenue.toFixed(2) : '0,00' %>
+    </div>
+    <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">
+      período selecionado
+    </div>
+  </div>
+
+  <!-- Cost Summary -->
+  <div class="card">
+    <h3 style="margin: 0 0 var(--spacing-lg) 0;">💸 Custo Total</h3>
+    <div style="font-size: 28px; font-weight: 700; color: var(--color-warning); margin-bottom: var(--spacing-md);">
+      R$ <%= profit && profit.totalCosts ? profit.totalCosts.toFixed(2) : '0,00' %>
+    </div>
+    <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">
+      período selecionado
+    </div>
+  </div>
+
+  <!-- Profit Summary -->
+  <div class="card">
+    <h3 style="margin: 0 0 var(--spacing-lg) 0;">📈 Lucro Líquido</h3>
+    <div style="font-size: 28px; font-weight: 700; color: var(--color-success); margin-bottom: var(--spacing-md);">
+      R$ <%= profit && profit.netProfit ? profit.netProfit.toFixed(2) : '0,00' %>
+    </div>
+    <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">
+      % margem: <%= profit && profit.totalRevenue > 0 ? ((profit.netProfit / profit.totalRevenue) * 100).toFixed(1) : '0' %>%
+    </div>
+  </div>
+</section>
+
+<!-- Top Sellers Section -->
+<section class="section">
+  <div class="section-title">🏆 Top Produtos</div>
+  
+  <% if (bestSellers && bestSellers.length > 0) { %>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Posição</th>
+            <th>Produto</th>
+            <th class="text-right">Quantidade</th>
+            <th class="text-right">Receita</th>
+            <th class="text-right">% do Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% bestSellers.slice(0, 10).forEach((item, index) => { %>
+          <tr>
+            <td style="font-weight: 600; color: var(--color-primary);">#<%= index + 1 %></td>
+            <td><strong><%= item.productName %></strong></td>
+            <td class="currency text-right"><%= (item.qtySold || 0) %> un.</td>
+            <td class="currency text-right">R$ <%= (item.totalRevenue || 0).toFixed(2) %></td>
+            <td class="currency text-right">
+              <span class="badge badge-primary">
+                <%= (((item.totalRevenue || 0) / (profit && profit.totalRevenue > 0 ? profit.totalRevenue : 1)) * 100).toFixed(1) %>%
+              </span>
+            </td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } else { %>
+    <div class="empty-state">
+      <div class="empty-state-icon">📭</div>
+      <div class="empty-state-title">Nenhuma venda registrada</div>
+      <p>Não há dados para o período selecionado</p>
+    </div>
+  <% } %>
+</section>
+
+<script>
+function setQuickFilter(period) {
+  const today = new Date();
+  let startDate = new Date(today);
+  let endDate = new Date(today);
+
+  // Update active button
+  document.querySelectorAll('.quick-filter-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+
+  if (period === 'today') {
+    // Already set to today
+  } else if (period === 'yesterday') {
+    startDate.setDate(today.getDate() - 1);
+    endDate = new Date(startDate);
+  } else if (period === 'week') {
+    const day = today.getDay();
+    startDate.setDate(today.getDate() - day); // Start of week (Sunday)
+  } else if (period === 'month') {
+    startDate.setDate(1); // Start of month
+  }
+
+  document.getElementById('filterStartDate').value = startDate.toISOString().split('T')[0];
+  document.getElementById('filterEndDate').value = endDate.toISOString().split('T')[0];
+  applyDateFilter();
+}
+
+function applyDateFilter() {
+  const startDate = document.getElementById('filterStartDate').value;
+  const endDate = document.getElementById('filterEndDate').value;
+  
+  if (startDate && endDate) {
+    window.location.href = `/relatorios?startDate=${startDate}&endDate=${endDate}`;
+  }
+}
+
+// Add Enter key support to date inputs
+document.getElementById('filterStartDate')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') applyDateFilter();
+});
+document.getElementById('filterEndDate')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') applyDateFilter();
+});
+</script>

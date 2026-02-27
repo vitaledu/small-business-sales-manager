@@ -1,0 +1,90 @@
+<!-- Page Header -->
+<div class="page-header">
+  <div>
+    <h1>Dashboard</h1>
+    <p>Visão geral do seu negócio</p>
+  </div>
+  <a href="/vendas/nova" class="btn btn-primary btn-lg">💳 Nova Venda</a>
+</div>
+
+<!-- Key Metrics -->
+<div class="dashboard-grid">
+  <div class="stat-card">
+    <div class="stat-icon">💰</div>
+    <div class="stat-label">Receita do Dia</div>
+    <div class="stat-value">R$ <%= dailyRevenue.toFixed(2) %></div>
+  </div>
+
+  <div class="stat-card warning">
+    <div class="stat-icon">💸</div>
+    <div class="stat-label">Custo do Dia</div>
+    <div class="stat-value">R$ <%= dailyCost.toFixed(2) %></div>
+  </div>
+
+  <div class="stat-card success">
+    <div class="stat-icon">📈</div>
+    <div class="stat-label">Lucro do Dia</div>
+    <div class="stat-value">R$ <%= dailyProfit.toFixed(2) %></div>
+  </div>
+
+  <div class="stat-card danger">
+    <div class="stat-icon">⚠️</div>
+    <div class="stat-label">Estoque Baixo</div>
+    <div class="stat-value"><%= lowStockCount %></div>
+    <div class="stat-meta">produtos para reabastecer</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon">🔄</div>
+    <div class="stat-label">Devoluções Pendentes</div>
+    <div class="stat-value"><%= outstandingReturnables %></div>
+    <div class="stat-meta">
+      <% if (outstandingReturnables > 0) { %>
+        <a href="/devolucoes" style="color: var(--primary); font-weight: 600;">Ver devoluções →</a>
+      <% } else { %>
+        <span style="color: var(--success); font-weight: 600;">✓ Tudo em dia</span>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<section class="section">
+  <div class="section-title">Ações Rápidas</div>
+  <div class="btn-group">
+    <a href="/vendas/nova" class="btn btn-primary btn-lg">💳 Nova Venda</a>
+    <a href="/compras/nova" class="btn btn-secondary btn-lg">📥 Nova Compra</a>
+    <a href="/lotes/novo" class="btn btn-secondary btn-lg">🏭 Novo Lote</a>
+    <a href="/devolucoes" class="btn btn-secondary btn-lg">
+      🔄 Devoluções<% if (outstandingReturnables > 0) { %> (<%= outstandingReturnables %>)<% } %>
+    </a>
+  </div>
+</section>
+
+<!-- Management Links -->
+<section class="section">
+  <div class="section-title">Gerenciamento</div>
+  <div class="grid-3">
+    <a href="/produtos" class="quick-action-card">
+      <div class="quick-action-icon">📦</div>
+      <div>
+        <h3>Produtos</h3>
+        <p>Gerenciar estoque</p>
+      </div>
+    </a>
+    <a href="/clientes" class="quick-action-card">
+      <div class="quick-action-icon">👥</div>
+      <div>
+        <h3>Clientes</h3>
+        <p>Consultar clientes</p>
+      </div>
+    </a>
+    <a href="/relatorios" class="quick-action-card">
+      <div class="quick-action-icon">📊</div>
+      <div>
+        <h3>Relatórios</h3>
+        <p>Análise de dados</p>
+      </div>
+    </a>
+  </div>
+</section>

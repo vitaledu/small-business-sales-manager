@@ -1,0 +1,58 @@
+<div class="page-header">
+  <div>
+    <h1>Devoluções</h1>
+    <p style="margin: 0; color: var(--text-secondary);">Garrafas retornáveis pendentes</p>
+  </div>
+</div>
+
+<% if (!outstanding || outstanding.length === 0) { %>
+  <div class="empty-state">
+    <div class="empty-state-icon">✅</div>
+    <div class="empty-state-title">Tudo em dia!</div>
+    <p>Não há garrafas pendentes de devolução no momento.</p>
+  </div>
+<% } else { %>
+  <!-- Summary Card -->
+  <div class="stat-card" style="margin-bottom: var(--spacing-2xl); border-left-color: var(--color-warning);">
+    <div class="stat-label">Total de Depósitos Pendentes</div>
+    <div class="stat-value" style="color: var(--color-warning);">
+      R$ <%= outstanding.reduce((sum, item) => sum + item.depositValueTotal, 0).toFixed(2) %>
+    </div>
+    <div class="stat-meta"><%= outstanding.length %> registro(s) em aberto</div>
+  </div>
+
+  <div class="section-title">Garrafas Pendentes por Cliente</div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Produto</th>
+          <th class="text-right">Garrafas Pendentes</th>
+          <th class="text-right">Depósito (R$)</th>
+          <th>Registrar Devolução</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% outstanding.forEach(item => { %>
+        <tr>
+          <td><strong><%= item.customer.name %></strong></td>
+          <td><%= item.product.name %></td>
+          <td class="text-right">
+            <span style="color: var(--color-warning); font-weight: 600;"><%= item.quantityPending %> un.</span>
+          </td>
+          <td class="currency text-right">R$ <%= item.depositValueTotal.toFixed(2) %></td>
+          <td>
+            <form method="POST" action="/devolucoes/registrar" style="display: flex; gap: var(--spacing-sm); align-items: center;">
+              <input type="hidden" name="customerId" value="<%= item.customerId %>">
+              <input type="hidden" name="productId" value="<%= item.productId %>">
+              <input type="number" name="quantityReturned" min="1" max="<%= item.quantityPending %>" value="<%= item.quantityPending %>" step="1" style="width: 80px; padding: 6px 8px; font-size: var(--font-size-sm);" required>
+              <button type="submit" class="btn btn-sm btn-success">Registrar</button>
+            </form>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>

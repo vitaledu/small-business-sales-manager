@@ -1,0 +1,66 @@
+<div class="card">
+  <h2>📦 Produtos</h2>
+
+  <div class="btn-group">
+    <button onclick="mostrarFormProduto()" class="btn" style="background: #667eea; color: white;">+ Novo Produto</button>
+  </div>
+
+  <h3>Sacolés</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Custo Unit.</th>
+        <th>Preço Unit.</th>
+        <th>Estoque</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Sacolé Morango</td>
+        <td class="currency">R$ 0,20</td>
+        <td class="currency">R$ 1,00</td>
+        <td>150 un.</td>
+        <td><span class="badge badge-green">Ativo</span></td>
+        <td>
+          <button onclick="editarProduto(1)" class="btn">Editar</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Bebidas</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Custo Unit.</th>
+        <th>Preço Unit.</th>
+        <th>Retornável</th>
+        <th>Estoque</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Coca-Cola 2L</td>
+        <td class="currency">R$ 8,00</td>
+        <td class="currency">R$ 12,00</td>
+        <td>✅</td>
+        <td>25 un.</td>
+        <td><span class="badge badge-green">Ativo</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+function mostrarFormProduto() {
+  alert('Formulário de novo produto');
+}
+function editarProduto(id) {
+  alert('Editar produto ' + id);
+}
+</script>

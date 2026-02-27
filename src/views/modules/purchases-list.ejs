@@ -1,0 +1,60 @@
+<div class="page-header">
+  <div>
+    <h1>Compras</h1>
+    <p style="margin: 0; color: var(--text-secondary);">Entradas de estoque</p>
+  </div>
+  <a href="/compras/nova" class="btn btn-primary">+ Nova Compra</a>
+</div>
+
+<% if (purchases && purchases.length > 0) { %>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Fornecedor</th>
+          <th class="text-right">Itens</th>
+          <th class="text-right">Total</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% purchases.forEach(p => { %>
+        <tr>
+          <td><%= new Date(p.date).toLocaleDateString('pt-BR') %></td>
+          <td><%= p.supplierName || 'Fornecedor não informado' %></td>
+          <td class="text-right"><%= p.items ? p.items.length : 0 %> item(s)</td>
+          <td class="currency text-right">R$ <%= (p.totalCostBrl).toFixed(2) %></td>
+          <td>
+            <% if (p.status === 'RECEIVED') { %>
+              <span class="badge badge-success">Recebido</span>
+            <% } else { %>
+              <span class="badge badge-warning">Pendente</span>
+            <% } %>
+          </td>
+          <td>
+            <div class="table-actions">
+              <% if (p.status === 'DRAFT') { %>
+                <form method="POST" action="/compras/<%= p.id %>/finalizar" style="display:inline;">
+                  <button type="submit" class="btn btn-sm btn-success">Receber</button>
+                </form>
+              <% } %>
+              <form method="POST" action="/compras/<%= p.id %>/deletar" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Deletar esta compra?')">Deletar</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } else { %>
+  <div class="empty-state">
+    <div class="empty-state-icon">📥</div>
+    <div class="empty-state-title">Nenhuma compra registrada</div>
+    <p>Registre compras para atualizar o estoque</p>
+    <a href="/compras/nova" class="btn btn-primary" style="margin-top: var(--spacing-lg);">+ Nova Compra</a>
+  </div>
+<% } %>

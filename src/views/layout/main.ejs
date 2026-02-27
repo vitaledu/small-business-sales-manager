@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || 'Sacolé Manager' %> | Viviane</title>
+  <link rel="stylesheet" href="/css/custom.css">
+</head>
+<body>
+<%
+  var currentTitle = (title || '').toLowerCase();
+  function isActive(keywords) {
+    return keywords.some(function(k) { return currentTitle.indexOf(k) !== -1; }) ? 'active' : '';
+  }
+%>
+
+<div class="app-shell">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">🥤</div>
+      <div>
+        <div class="sidebar-brand-name">Sacolé Manager</div>
+        <div class="sidebar-brand-sub">Viviane</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- Dashboard -->
+      <a href="/dashboard" class="sidebar-link <%= isActive(['dashboard']) %>">
+        <i class="nav-icon">⊞</i> Dashboard
+      </a>
+
+      <!-- Operações -->
+      <div class="sidebar-section-label">Operações</div>
+      <a href="/vendas" class="sidebar-link <%= isActive(['venda']) %>">
+        <i class="nav-icon">💳</i> Vendas
+      </a>
+      <a href="/compras" class="sidebar-link <%= isActive(['compra']) %>">
+        <i class="nav-icon">📥</i> Compras
+      </a>
+      <a href="/lotes" class="sidebar-link <%= isActive(['lote']) %>">
+        <i class="nav-icon">🏭</i> Lotes
+      </a>
+      <a href="/devolucoes" class="sidebar-link <%= isActive(['devolu']) %>">
+        <i class="nav-icon">🔄</i> Devoluções
+      </a>
+
+      <!-- Cadastros -->
+      <div class="sidebar-section-label">Cadastros</div>
+      <a href="/produtos" class="sidebar-link <%= isActive(['produto']) %>">
+        <i class="nav-icon">📦</i> Produtos
+      </a>
+      <a href="/clientes" class="sidebar-link <%= isActive(['cliente']) %>">
+        <i class="nav-icon">👥</i> Clientes
+      </a>
+
+      <!-- Relatórios -->
+      <div class="sidebar-section-label">Análise</div>
+      <a href="/relatorios" class="sidebar-link <%= isActive(['relat']) %>">
+        <i class="nav-icon">📊</i> Relatórios
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      © 2026 Sacolé Manager
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN AREA ═══ -->
+  <div class="main-area">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="topbar-menu-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+      <div class="topbar-date">
+        <%= new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) %>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <main class="page-content">
+      <%- body %>
+    </main>
+
+    <footer class="main-footer">
+      Sacolé Manager &mdash; Viviane
+    </footer>
+  </div>
+
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+</script>
+</body>
+</html>

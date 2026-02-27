@@ -1,0 +1,53 @@
+<div class="card">
+  <h2>👥 Clientes</h2>
+
+  <div class="btn-group">
+    <button onclick="mostrarFormCliente()" class="btn" style="background: #667eea; color: white;">+ Novo Cliente</button>
+    <input type="text" id="searchClientes" placeholder="Buscar cliente..." style="flex: 1; min-width: 200px;">
+  </div>
+
+  <h3>Lista de Clientes</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Tipo</th>
+        <th>Telefone</th>
+        <th>Total Gasto</th>
+        <th>Garrafas Pendentes</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>João da Silva</td>
+        <td>Pessoa Física</td>
+        <td>(11) 9876-5432</td>
+        <td class="currency">R$ 250,00</td>
+        <td><span class="badge badge-yellow">2 garrafas</span></td>
+        <td>
+          <button onclick="verCliente(1)" class="btn">Ver</button>
+        </td>
+      </tr>
+      <tr>
+        <td>Loja Central</td>
+        <td>Revendedor</td>
+        <td>(11) 3333-4444</td>
+        <td class="currency">R$ 1.500,00</td>
+        <td><span class="badge badge-green">Nenhuma</span></td>
+        <td>
+          <button onclick="verCliente(2)" class="btn">Ver</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+function mostrarFormCliente() {
+  alert('Formulário de novo cliente');
+}
+function verCliente(id) {
+  window.location.href = '/clientes/' + id;
+}
+</script>

@@ -1,0 +1,110 @@
+<div class="page-header">
+  <div>
+    <h1>Lotes de Produção</h1>
+    <p style="margin: 0; color: var(--text-secondary);">Registro de produções de sacolé</p>
+  </div>
+  <a href="/lotes/novo" class="btn btn-primary">+ Novo Lote</a>
+</div>
+
+<% if (batches && batches.length > 0) { %>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Descrição</th>
+          <th class="text-right">Quantidade</th>
+          <th class="text-right">Custo Total</th>
+          <th class="text-right">Custo Unit.</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% batches.forEach(b => { %>
+        <tr>
+          <td><%= new Date(b.date).toLocaleDateString('pt-BR') %></td>
+          <td><strong><%= b.description %></strong></td>
+          <td class="text-right"><%= b.quantityProduced %> un.</td>
+          <td class="currency text-right">R$ <%= (b.totalCostBrl).toFixed(2) %></td>
+          <td class="currency text-right">R$ <%= (b.costPerUnit || 0).toFixed(3) %></td>
+          <td>
+            <% if (b.status === 'COMPLETED') { %>
+              <span class="badge badge-success">Finalizado</span>
+            <% } else { %>
+              <span class="badge badge-warning">Rascunho</span>
+            <% } %>
+          </td>
+          <td>
+            <div class="table-actions">
+              <% if (b.status === 'DRAFT') { %>
+                <button type="button" class="btn btn-sm btn-success finalize-btn" data-id="<%= b.id %>" data-desc="<%= b.description %>">Finalizar</button>
+              <% } %>
+              <form method="POST" action="/lotes/<%= b.id %>/deletar" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Deletar este lote?')">Deletar</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } else { %>
+  <div class="empty-state">
+    <div class="empty-state-icon">🏭</div>
+    <div class="empty-state-title">Nenhum lote registrado</div>
+    <p>Registre lotes de produção para controlar o estoque</p>
+    <a href="/lotes/novo" class="btn btn-primary" style="margin-top: var(--spacing-lg);">+ Novo Lote</a>
+  </div>
+<% } %>
+
+<!-- Finalize Batch Modal -->
+<div class="modal-overlay" id="finalizeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 style="font-size: var(--font-size-xl); margin: 0;">Finalizar Lote</h2>
+    </div>
+    <form method="POST" id="finalizeForm">
+      <div class="modal-body">
+        <p id="modalDescription" style="margin-bottom: var(--spacing-lg); font-weight: 600; color: var(--text-primary);"></p>
+        <div class="form-group">
+          <label>Produto que receberá o estoque *</label>
+          <select name="productId" required>
+            <option value="">Selecione o produto...</option>
+            <% (products || []).forEach(p => { %>
+              <option value="<%= p.id %>"><%= p.name %> (<%= p.type === 'BEBIDA' ? 'Bebida' : 'Sacolé' %>)</option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="alert alert-info" style="font-size: var(--font-size-sm); margin: 0;">
+          Ao finalizar, o estoque do produto selecionado será atualizado com a quantidade produzida.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-success">Confirmar e Finalizar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.finalize-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var id = this.getAttribute('data-id');
+    var desc = this.getAttribute('data-desc');
+    document.getElementById('finalizeForm').action = '/lotes/' + id + '/finalizar';
+    document.getElementById('modalDescription').textContent = 'Lote: ' + desc;
+    document.getElementById('finalizeModal').classList.add('show');
+  });
+});
+
+function closeModal() {
+  document.getElementById('finalizeModal').classList.remove('show');
+}
+
+document.getElementById('finalizeModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>

@@ -1,0 +1,71 @@
+<div class="page-header">
+  <div>
+    <h1>Clientes</h1>
+    <p style="margin: 0; color: var(--text-secondary);">Cadastro de clientes</p>
+  </div>
+  <a href="/clientes/novo" class="btn btn-primary">+ Novo Cliente</a>
+</div>
+
+<% if (customers && customers.length > 0) { %>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Tipo</th>
+          <th>Telefone</th>
+          <th class="text-right">Depósito Pendente</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% customers.forEach(c => { %>
+        <tr>
+          <td>
+            <strong><%= c.name %></strong>
+            <% if (c.address) { %>
+              <div style="font-size: var(--font-size-xs); color: var(--text-secondary); margin-top: 2px;">
+                <%= c.address %><% if (c.neighborhood) { %>, <%= c.neighborhood %><% } %>
+              </div>
+            <% } %>
+          </td>
+          <td>
+            <span class="badge badge-primary">
+              <%= c.type === 'PF' ? 'Pessoa Física' : 'Revendedor' %>
+            </span>
+          </td>
+          <td><%= c.phone || '-' %></td>
+          <td class="text-right">
+            <% if (c.outstandingReturnableDepo > 0) { %>
+              <span style="color: var(--color-warning); font-weight: 600;">R$ <%= (c.outstandingReturnableDepo).toFixed(2) %></span>
+            <% } else { %>
+              <span style="color: var(--text-secondary);">R$ 0,00</span>
+            <% } %>
+          </td>
+          <td>
+            <span class="badge <%= c.status === 'ATIVO' ? 'badge-success' : 'badge-danger' %>">
+              <%= c.status === 'ATIVO' ? 'Ativo' : 'Inativo' %>
+            </span>
+          </td>
+          <td>
+            <div class="table-actions">
+              <a href="/clientes/<%= c.id %>/editar" class="btn btn-sm btn-light">Editar</a>
+              <form method="POST" action="/clientes/<%= c.id %>/deletar" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remover este cliente?')">Remover</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } else { %>
+  <div class="empty-state">
+    <div class="empty-state-icon">👥</div>
+    <div class="empty-state-title">Nenhum cliente cadastrado</div>
+    <p>Adicione clientes para registrar vendas</p>
+    <a href="/clientes/novo" class="btn btn-primary" style="margin-top: var(--spacing-lg);">+ Novo Cliente</a>
+  </div>
+<% } %>

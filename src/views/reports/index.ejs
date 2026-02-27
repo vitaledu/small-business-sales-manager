@@ -1,0 +1,82 @@
+<div class="card">
+  <h2>📊 Relatórios</h2>
+
+  <div class="btn-group">
+    <a href="#" class="btn" style="background: #667eea; color: white; text-decoration: none;">📈 Lucro Diário/Semanal/Mensal</a>
+    <a href="#" class="btn" style="background: #48bb78; color: white; text-decoration: none;">🏆 Melhores Vendas</a>
+    <a href="#" class="btn" style="background: #ed8936; color: white; text-decoration: none;">📦 Inventário</a>
+  </div>
+
+  <h3>Selecione um período:</h3>
+  <div class="form-row">
+    <div>
+      <label>
+        Data Inicial:
+        <input type="date" id="startDate">
+      </label>
+    </div>
+    <div>
+      <label>
+        Data Final:
+        <input type="date" id="endDate">
+      </label>
+    </div>
+    <div style="display: flex; align-items: flex-end; gap: 0.5rem;">
+      <button onclick="gerarRelatorio()" class="btn" style="background: #667eea; color: white;">Gerar Relatório</button>
+    </div>
+  </div>
+
+  <h3>Resumo Financeiro (Últimos 30 dias)</h3>
+  <div class="form-row">
+    <div style="background: #c6f6d5; padding: 1rem; border-radius: 0.5rem; text-align: center;">
+      <p style="margin: 0; color: #22543d;">Receita Total</p>
+      <p style="margin: 0; font-size: 1.5rem; font-weight: bold; color: #22543d;">R$ 5.000,00</p>
+    </div>
+    <div style="background: #fed7d7; padding: 1rem; border-radius: 0.5rem; text-align: center;">
+      <p style="margin: 0; color: #742a2a;">Custos Totais</p>
+      <p style="margin: 0; font-size: 1.5rem; font-weight: bold; color: #742a2a;">R$ 2.300,00</p>
+    </div>
+    <div style="background: #bee3f8; padding: 1rem; border-radius: 0.5rem; text-align: center;">
+      <p style="margin: 0; color: #2c5282;">Lucro Líquido</p>
+      <p style="margin: 0; font-size: 1.5rem; font-weight: bold; color: #2c5282;">R$ 2.700,00</p>
+    </div>
+  </div>
+
+  <h3>Melhores Produtos</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Produto</th>
+        <th>Qtd Vendida</th>
+        <th>Receita</th>
+        <th>Custo</th>
+        <th>Lucro</th>
+        <th>Margem</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Sacolé Morango</td>
+        <td>500 un.</td>
+        <td class="currency">R$ 500,00</td>
+        <td class="currency">R$ 100,00</td>
+        <td class="currency">R$ 400,00</td>
+        <td><strong>80%</strong></td>
+      </tr>
+      <tr>
+        <td>Coca-Cola 2L</td>
+        <td>120 un.</td>
+        <td class="currency">R$ 1.440,00</td>
+        <td class="currency">R$ 960,00</td>
+        <td class="currency">R$ 480,00</td>
+        <td><strong>33%</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+function gerarRelatorio() {
+  alert('Gerando relatório...');
+}
+</script>

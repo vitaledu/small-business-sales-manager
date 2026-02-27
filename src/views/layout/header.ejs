@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || 'Sistema de Gestão - Sacolé & Bebidas' %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+  <link rel="stylesheet" href="/css/custom.css">
+  <style>
+    * {
+      --form-element-valid-border-color: #48bb78;
+      --form-element-invalid-border-color: #f56565;
+      --form-element-focus-border-color: #4299e1;
+    }
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .navbar {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1rem;
+      margin-bottom: 2rem;
+    }
+    .navbar h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      background: rgba(255, 255, 255, 0.2);
+      transition: background 0.3s;
+    }
+    .nav-links a:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .alert {
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0.5rem;
+    }
+    .alert-success {
+      background: #c6f6d5;
+      color: #22543d;
+      border: 1px solid #9ae6b4;
+    }
+    .alert-error {
+      background: #fed7d7;
+      color: #742a2a;
+      border: 1px solid #fc8181;
+    }
+    .alert-warning {
+      background: #feebc8;
+      color: #7c2d12;
+      border: 1px solid #fbd38d;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    table td, table th {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    table th {
+      background: #f7fafc;
+      font-weight: bold;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 0.25rem;
+      font-size: 0.875rem;
+      font-weight: bold;
+    }
+    .badge-green {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+    .badge-red {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+    .badge-yellow {
+      background: #feebc8;
+      color: #7c2d12;
+    }
+    .currency {
+      font-weight: bold;
+      color: #2d3748;
+    }
+    button, a.btn {
+      border-radius: 0.25rem;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+    }
+    .btn-group {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1>📦 Gestão: Sacolé & Bebidas</h1>
+      <div class="nav-links">
+        <a href="/">Dashboard</a>
+        <a href="/produtos">Produtos</a>
+        <a href="/clientes">Clientes</a>
+        <a href="/vendas/nova">+ Nova Venda</a>
+        <a href="/relatorios">Relatórios</a>
+        <a href="/devolucoes">Devoluções</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <%- body %>
+  </main>
+
+  <footer style="text-align: center; margin-top: 2rem; padding: 1rem; border-top: 1px solid #e2e8f0; color: #718096;">
+    <p>© 2024 Sistema de Gestão - Viviane. Desenvolvido com ❤️</p>
+  </footer>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

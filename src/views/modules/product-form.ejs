@@ -1,0 +1,50 @@
+<div class="page-header">
+  <h1><%= product ? '✏️ Editar Produto' : '➕ Novo Produto' %></h1>
+</div>
+
+<form method="POST" action="<%= product ? '/produtos/' + product.id + '/editar' : '/produtos' %>" class="form-card form-card-narrow">
+  <div class="form-group">
+    <label>Nome do Produto *</label>
+    <input type="text" name="name" value="<%= product ? product.name : '' %>" required>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label>Tipo *</label>
+      <select name="type" required>
+        <option value="">Selecione...</option>
+        <option value="SACOLÉ" <%= product && product.type === 'SACOLÉ' ? 'selected' : '' %>>Sacolé</option>
+        <option value="BEBIDA" <%= product && product.type === 'BEBIDA' ? 'selected' : '' %>>Bebida</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>
+        <input type="checkbox" name="isReturnable" <%= product && product.isReturnable ? 'checked' : '' %> style="margin-right: var(--spacing-sm);">
+        Retornável
+      </label>
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label>Custo Unitário (R$) *</label>
+      <input type="number" name="costUnit" step="0.01" value="<%= product ? product.costUnit : '' %>" required>
+    </div>
+
+    <div class="form-group">
+      <label>Preço de Venda (R$) *</label>
+      <input type="number" name="priceUnit" step="0.01" value="<%= product ? product.priceUnit : '' %>" required>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Descrição</label>
+    <textarea name="description"><%= product ? product.description || '' : '' %></textarea>
+  </div>
+
+  <div class="form-actions">
+    <a href="/produtos" class="btn btn-secondary">← Cancelar</a>
+    <button type="submit" class="btn btn-primary"><%= product ? '💾 Atualizar' : '💾 Criar Produto' %></button>
+  </div>
+</form>

@@ -1,0 +1,78 @@
+<!-- Page Header -->
+<div class="page-header">
+  <div>
+    <h1>Produtos</h1>
+    <p style="margin: 0; color: var(--text-secondary);">Gerenciamento de estoque</p>
+  </div>
+  <a href="/produtos/novo" class="btn btn-primary">+ Novo Produto</a>
+</div>
+
+<% if (products && products.length > 0) { %>
+  <!-- Products Table -->
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Tipo</th>
+          <th class="text-right">Custo</th>
+          <th class="text-right">Preço</th>
+          <th class="text-right">Estoque</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% products.forEach(p => { %>
+        <tr>
+          <td>
+            <strong><%= p.name %></strong>
+            <div style="font-size: var(--font-size-xs); color: var(--text-secondary); margin-top: var(--spacing-xs);">
+              <% if (p.isReturnable) { %>
+                <span class="badge badge-primary">Retornável</span>
+              <% } %>
+            </div>
+          </td>
+          <td>
+            <span class="badge badge-primary">
+              <% if (p.type === 'BEBIDA') { %>Bebida<% } else { %>Sacolé<% } %>
+            </span>
+          </td>
+          <td class="currency text-right">R$ <%= (p.costUnit).toFixed(2) %></td>
+          <td class="currency text-right" style="font-weight:600;">R$ <%= (p.priceUnit).toFixed(2) %></td>
+          <td class="currency text-right">
+            <% if (p.currentStock < 10) { %>
+              <span style="color: var(--color-danger); font-weight: 600;">⚠️ <%= Math.floor(p.currentStock) %> un.</span>
+            <% } else { %>
+              <%= Math.floor(p.currentStock) %> un.
+            <% } %>
+          </td>
+          <td>
+            <% if (p.status === 'ATIVO') { %>
+              <span class="badge badge-success">✓ Ativo</span>
+            <% } else { %>
+              <span class="badge badge-danger">✗ Inativo</span>
+            <% } %>
+          </td>
+          <td>
+            <div class="table-actions">
+              <a href="/produtos/<%= p.id %>/editar" class="btn btn-sm btn-light">Editar</a>
+              <form method="POST" action="/produtos/<%= p.id %>/deletar" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Deletar este produto?')">Deletar</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } else { %>
+  <!-- Empty State -->
+  <div class="empty-state">
+    <div class="empty-state-icon">📦</div>
+    <div class="empty-state-title">Nenhum produto cadastrado</div>
+    <p>Comece adicionando um novo produto ao seu estoque</p>
+    <a href="/produtos/novo" class="btn btn-primary" style="margin-top: var(--spacing-lg);">+ Novo Produto</a>
+  </div>
+<% } %>

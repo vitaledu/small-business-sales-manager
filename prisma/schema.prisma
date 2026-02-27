@@ -1,0 +1,230 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ========== PRODUCT ==========
+model Product {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  type        String  // "SACOLÉ" or "DRINK"
+  isReturnable Boolean @default(false)
+  costUnit    Float   // Custo unitário em BRL
+  priceUnit   Float   // Preço de venda em BRL
+  description String?
+  status      String  @default("ATIVO") // "ATIVO" or "INATIVO"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  inventoryMovements InventoryMovement[]
+  saleItems          SaleItem[]
+  purchaseItems      PurchaseItem[]
+  returnableLedgers  ReturnableLedger[]
+
+  @@index([type])
+  @@index([status])
+}
+
+// ========== CUSTOMER ==========
+model Customer {
+  id                        Int     @id @default(autoincrement())
+  name                      String
+  type                      String  // "PF" (Pessoa Física) or "REVENDEDOR"
+  phone                     String?
+  address                   String?
+  neighborhood              String?
+  status                    String  @default("ATIVO")
+  outstandingBalance        Float   @default(0) // Para crediário (v2)
+  outstandingReturnableDepo Float   @default(0) // Total depósito em aberto
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  saleOrders         SaleOrder[]
+  returnableLedgers  ReturnableLedger[]
+
+  @@index([name])
+  @@index([status])
+}
+
+// ========== INVENTORY MOVEMENT ==========
+model InventoryMovement {
+  id           Int     @id @default(autoincrement())
+  productId    Int
+  product      Product @relation(fields: [productId], references: [id])
+  type         String  // "IN", "OUT", "ADJUST"
+  quantity     Float
+  reason       String? // "VENDA", "COMPRA", "PRODUÇÃO", "PERDA", "AJUSTE"
+  referenceId  String? // Reference to sale_id, purchase_id, batch_id, etc.
+  referenceType String? // "SALE", "PURCHASE", "BATCH"
+  createdAt    DateTime @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+}
+
+// ========== PURCHASE ORDER ==========
+model PurchaseOrder {
+  id          Int      @id @default(autoincrement())
+  supplierName String?
+  date        DateTime
+  totalCostBrl Float
+  status      String   @default("DRAFT") // "DRAFT", "RECEIVED"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items PurchaseItem[]
+
+  @@index([date])
+}
+
+// ========== PURCHASE ITEM ==========
+model PurchaseItem {
+  id              Int    @id @default(autoincrement())
+  purchaseOrderId Int
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       Int
+  product         Product @relation(fields: [productId], references: [id])
+  quantity        Float
+  costUnitBrl     Float
+  subtotalBrl     Float
+  createdAt       DateTime @default(now())
+
+  @@unique([purchaseOrderId, productId])
+}
+
+// ========== PRODUCTION BATCH ==========
+model ProductionBatch {
+  id              Int     @id @default(autoincrement())
+  description     String
+  date            DateTime
+  totalCostBrl    Float
+  quantityProduced Int
+  costPerUnit     Float?
+  status          String  @default("DRAFT") // "DRAFT", "COMPLETED"
+  ingredients     String? // JSON array of ingredients (optional)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([date])
+}
+
+// ========== SALE ORDER ==========
+model SaleOrder {
+  id              Int     @id @default(autoincrement())
+  customerId      Int
+  customer        Customer @relation(fields: [customerId], references: [id])
+  date            DateTime @default(now())
+  totalBrl        Float
+  discountPct     Float   @default(0)
+  discountValue   Float   @default(0)
+  finalTotalBrl   Float
+  paymentMethod   String  // "DINHEIRO", "PIX", "CARTÃO"
+  returnableDepositCharged Float @default(0)
+  status          String  @default("DRAFT") // "DRAFT", "FINALIZADA"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items    SaleItem[]
+  payments Payment[]
+
+  @@index([customerId])
+  @@index([date])
+}
+
+// ========== SALE ITEM ==========
+model SaleItem {
+  id             Int     @id @default(autoincrement())
+  saleOrderId    Int
+  saleOrder      SaleOrder @relation(fields: [saleOrderId], references: [id], onDelete: Cascade)
+  productId      Int
+  product        Product @relation(fields: [productId], references: [id])
+  quantity       Float
+  priceUnitBrl   Float
+  discountPct    Float   @default(0)
+  subtotalBrl    Float
+  createdAt      DateTime @default(now())
+
+  @@unique([saleOrderId, productId])
+}
+
+// ========== PAYMENT ==========
+model Payment {
+  id             Int     @id @default(autoincrement())
+  saleOrderId    Int
+  saleOrder      SaleOrder @relation(fields: [saleOrderId], references: [id], onDelete: Cascade)
+  method         String  // "DINHEIRO", "PIX", "CARTÃO"
+  amountBrl      Float
+  status         String  @default("PENDING") // "PENDING", "DONE"
+  transactionId  String?
+  receivedAt     DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([saleOrderId])
+}
+
+// ========== RETURNABLE LEDGER ==========
+model ReturnableLedger {
+  id                   Int     @id @default(autoincrement())
+  customerId           Int
+  customer             Customer @relation(fields: [customerId], references: [id])
+  productId            Int
+  product              Product @relation(fields: [productId], references: [id])
+  quantityOut          Float   @default(0) // Garrafas dadas ao cliente
+  quantityReturned     Float   @default(0) // Garrafas devolvidas
+  quantityPending      Float   @default(0) // Cálculo: quantityOut - quantityReturned
+  depositValueTotal    Float   @default(0) // Total depósito = quantityPending * R$ 5
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([customerId, productId])
+  @@index([customerId])
+}
+
+// ========== AUDIT LOG ==========
+model AuditLog {
+  id          Int     @id @default(autoincrement())
+  timestamp   DateTime @default(now())
+  action      String  // "SALE", "PURCHASE", "ADJUST", "RETURN", "BATCH_COMPLETE"
+  entityType  String  // "SALE_ORDER", "PRODUCT", "CUSTOMER", etc.
+  entityId    Int
+  details     String? // JSON details
+  userId      String? // For future multi-user
+  createdAt   DateTime @default(now())
+
+  @@index([timestamp])
+  @@index([action])
+  @@index([entityType])
+}
+
+// ========== RECIPE (Optional) ==========
+model Recipe {
+  id             Int     @id @default(autoincrement())
+  name           String  @unique
+  description    String?
+  yieldQuantity  Int     // Unidades produzidas
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  ingredients RecipeIngredient[]
+
+  @@index([name])
+}
+
+// ========== RECIPE INGREDIENT ==========
+model RecipeIngredient {
+  id          Int     @id @default(autoincrement())
+  recipeId    Int
+  recipe      Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredientName String
+  quantity    Float
+  unit        String  // "ml", "g", "peça", etc.
+  costIfBought Float?
+  createdAt   DateTime @default(now())
+}

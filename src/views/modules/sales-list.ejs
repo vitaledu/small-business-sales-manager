@@ -1,0 +1,153 @@
+<div class="page-header">
+  <div>
+    <h1>Vendas</h1>
+    <p style="margin: 0; color: var(--text-secondary);">Histórico de vendas</p>
+  </div>
+  <a href="/vendas/nova" class="btn btn-primary">+ Nova Venda</a>
+</div>
+
+<!-- Date Filter Bar -->
+<div class="filter-bar">
+  <div class="filter-group">
+    <label for="filterStartDate">Data Inicial</label>
+    <input type="date" id="filterStartDate" name="startDate" value="<%= startDate %>">
+  </div>
+  <div class="filter-group">
+    <label for="filterEndDate">Data Final</label>
+    <input type="date" id="filterEndDate" name="endDate" value="<%= endDate %>">
+  </div>
+  <div class="filter-group" style="flex: 0;">
+    <label>&nbsp;</label>
+    <button class="btn btn-primary" onclick="applyFilter()">Filtrar</button>
+  </div>
+</div>
+
+<div class="quick-filters">
+  <button class="quick-filter-btn" onclick="setQuick('today')">Hoje</button>
+  <button class="quick-filter-btn" onclick="setQuick('yesterday')">Ontem</button>
+  <button class="quick-filter-btn" onclick="setQuick('week')">Esta Semana</button>
+  <button class="quick-filter-btn" onclick="setQuick('month')">Este Mês</button>
+</div>
+
+<% if (sales && sales.length > 0) { %>
+  <!-- Summary Row -->
+  <%
+    var totalRevenue = sales.reduce(function(s, v) { return s + v.finalTotalBrl; }, 0);
+    var totalSales = sales.length;
+  %>
+  <div class="dashboard-grid" style="margin-bottom: var(--spacing-xl);">
+    <div class="stat-card">
+      <div class="stat-label">Vendas no Período</div>
+      <div class="stat-value"><%= totalSales %></div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-label">Receita Total</div>
+      <div class="stat-value">R$ <%= totalRevenue.toFixed(2) %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Ticket Médio</div>
+      <div class="stat-value">R$ <%= (totalRevenue / totalSales).toFixed(2) %></div>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Data/Hora</th>
+          <th>Cliente</th>
+          <th>Itens</th>
+          <th>Pagamento</th>
+          <th class="text-right">Total</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% sales.forEach(function(v) { %>
+        <tr>
+          <td>
+            <span style="font-weight: 600;"><%= new Date(v.date).toLocaleDateString('pt-BR') %></span>
+            <div style="font-size: var(--font-size-xs); color: var(--text-secondary);">
+              <%= new Date(v.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) %>
+            </div>
+          </td>
+          <td><strong><%= v.customer ? v.customer.name : 'Cliente' %></strong></td>
+          <td>
+            <% if (v.items && v.items.length > 0) { %>
+              <div style="font-size: var(--font-size-xs); color: var(--text-secondary);">
+                <% v.items.slice(0, 2).forEach(function(it) { %>
+                  <div><%= it.quantity %>x <%= it.product ? it.product.name : 'Produto' %></div>
+                <% }); %>
+                <% if (v.items.length > 2) { %>
+                  <div>+ <%= v.items.length - 2 %> item(s)</div>
+                <% } %>
+              </div>
+            <% } %>
+          </td>
+          <td>
+            <% if (v.paymentMethod === 'DINHEIRO') { %>
+              <span class="badge badge-success">Dinheiro</span>
+            <% } else if (v.paymentMethod === 'PIX') { %>
+              <span class="badge badge-primary">Pix</span>
+            <% } else { %>
+              <span class="badge badge-warning"><%= v.paymentMethod %></span>
+            <% } %>
+          </td>
+          <td class="currency text-right" style="font-weight: 700; font-size: var(--font-size-base);">
+            R$ <%= v.finalTotalBrl.toFixed(2) %>
+            <% if (v.discountValue > 0) { %>
+              <div style="font-size: var(--font-size-xs); color: var(--color-success);">- R$ <%= v.discountValue.toFixed(2) %> desc.</div>
+            <% } %>
+          </td>
+          <td>
+            <span class="badge badge-success">Finalizada</span>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } else { %>
+  <div class="empty-state">
+    <div class="empty-state-icon">🛒</div>
+    <div class="empty-state-title">Nenhuma venda no período</div>
+    <p>Não há vendas registradas para o período selecionado.</p>
+    <a href="/vendas/nova" class="btn btn-primary" style="margin-top: var(--spacing-lg);">+ Nova Venda</a>
+  </div>
+<% } %>
+
+<script>
+function applyFilter() {
+  var start = document.getElementById('filterStartDate').value;
+  var end = document.getElementById('filterEndDate').value;
+  if (start && end) {
+    window.location.href = '/vendas?startDate=' + start + '&endDate=' + end;
+  }
+}
+
+function setQuick(period) {
+  var today = new Date();
+  var start = new Date(today);
+  var end = new Date(today);
+
+  if (period === 'yesterday') {
+    start.setDate(today.getDate() - 1);
+    end = new Date(start);
+  } else if (period === 'week') {
+    start.setDate(today.getDate() - today.getDay());
+  } else if (period === 'month') {
+    start.setDate(1);
+  }
+
+  document.getElementById('filterStartDate').value = start.toISOString().split('T')[0];
+  document.getElementById('filterEndDate').value = end.toISOString().split('T')[0];
+  applyFilter();
+}
+
+document.getElementById('filterStartDate').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') applyFilter();
+});
+document.getElementById('filterEndDate').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') applyFilter();
+});
+</script>
