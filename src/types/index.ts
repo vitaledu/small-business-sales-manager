@@ -4,6 +4,7 @@ export interface IProduct {
   name: string;
   type: 'SACOLÉ' | 'DRINK';
   isReturnable: boolean;
+  depositValue?: number;
   costUnit: number;
   priceUnit: number;
   description?: string;

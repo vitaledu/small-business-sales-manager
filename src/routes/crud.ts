@@ -13,6 +13,8 @@ router.get('/produtos/novo', CrudController.productsNewForm);
 router.post('/produtos', CrudController.productsCreate);
 router.get('/produtos/:id/editar', CrudController.productsEditForm);
 router.post('/produtos/:id/editar', CrudController.productsUpdate);
+router.post('/produtos/:id/inativar', CrudController.productsInactivate);
+router.post('/produtos/:id/reativar', CrudController.productsReactivate);
 router.post('/produtos/:id/deletar', CrudController.productsDelete);
 
 // ========== CUSTOMERS ==========

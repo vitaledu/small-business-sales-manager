@@ -83,8 +83,8 @@ export class CrudController {
 
   static async productsCreate(req: Request, res: Response) {
     try {
-      const { name, type, costUnit, priceUnit, isReturnable } = req.body;
-      
+      const { name, type, costUnit, priceUnit, isReturnable, depositValue } = req.body;
+
       if (!name || !type || !costUnit || !priceUnit) {
         return res.status(400).render('layout/main', {
           title: 'Novo Produto',
@@ -92,12 +92,14 @@ export class CrudController {
         });
       }
 
+      const returnable = isReturnable === 'on';
       await ProductRepository.create({
         name,
         type,
         costUnit: parseFloat(costUnit),
         priceUnit: parseFloat(priceUnit),
-        isReturnable: isReturnable === 'on',
+        isReturnable: returnable,
+        depositValue: returnable ? parseFloat(depositValue || '5') : 0,
         description: req.body.description || ''
       });
 
@@ -130,12 +132,14 @@ export class CrudController {
 
   static async productsUpdate(req: Request, res: Response) {
     try {
+      const returnable = req.body.isReturnable === 'on';
       await ProductRepository.update(parseInt(req.params.id), {
         name: req.body.name,
         type: req.body.type,
         costUnit: parseFloat(req.body.costUnit),
         priceUnit: parseFloat(req.body.priceUnit),
-        isReturnable: req.body.isReturnable === 'on'
+        isReturnable: returnable,
+        depositValue: returnable ? parseFloat(req.body.depositValue || '5') : 0,
       });
 
       res.redirect('/produtos');
@@ -147,12 +151,32 @@ export class CrudController {
     }
   }
 
-  static async productsDelete(req: Request, res: Response) {
+  static async productsInactivate(req: Request, res: Response) {
     try {
-      await ProductRepository.delete(parseInt(req.params.id));
+      await ProductRepository.update(parseInt(req.params.id), { status: 'INATIVO' });
       res.redirect('/produtos');
     } catch (error: any) {
-      const body = `<div class="alert alert-error">Erro ao deletar produto: ${error.message}</div>`;
+      const body = `<div class="alert alert-error">Erro ao inativar produto: ${error.message}</div>`;
+      res.status(400).render('layout/main', { title: 'Produtos', body });
+    }
+  }
+
+  static async productsReactivate(req: Request, res: Response) {
+    try {
+      await ProductRepository.update(parseInt(req.params.id), { status: 'ATIVO' });
+      res.redirect('/produtos');
+    } catch (error: any) {
+      const body = `<div class="alert alert-error">Erro ao reativar produto: ${error.message}</div>`;
+      res.status(400).render('layout/main', { title: 'Produtos', body });
+    }
+  }
+
+  static async productsDelete(req: Request, res: Response) {
+    try {
+      await ProductRepository.hardDelete(parseInt(req.params.id));
+      res.redirect('/produtos');
+    } catch (error: any) {
+      const body = `<div class="alert alert-error">Não foi possível deletar: ${error.message}</div>`;
       res.status(400).render('layout/main', { title: 'Produtos', body });
     }
   }
@@ -463,11 +487,12 @@ export class CrudController {
 
   static async salesCreate(req: Request, res: Response) {
     try {
-      const { customerId, paymentMethod, discount, cardFeeRate } = req.body;
+      const { customerId, paymentMethod, discount, cardFeeRate, cardFeeType } = req.body;
       // Normalize to arrays — Express sends a string when only 1 row is submitted
-      const productIds: string[] = [].concat(req.body.productIds).filter(Boolean);
-      const quantities: string[] = [].concat(req.body.quantities);
-      const prices: string[]     = [].concat(req.body.prices);
+      const productIds: string[]     = [].concat(req.body.productIds).filter(Boolean);
+      const quantities: string[]     = [].concat(req.body.quantities);
+      const prices: string[]         = [].concat(req.body.prices);
+      const depositEnabled: string[] = [].concat(req.body.depositEnabled || []).map((v: any) => String(v));
 
       if (!customerId || productIds.length === 0) {
         return res.status(400).render('layout/main', {
@@ -484,22 +509,28 @@ export class CrudController {
         subtotalBrl: parseInt(quantities[idx]) * parseFloat(prices[idx])
       }));
 
-      const totalBrl     = items.reduce((sum: number, item: any) => sum + item.subtotalBrl, 0);
-      const discountPct  = parseFloat(discount || '0');
+      const totalBrl      = items.reduce((sum: number, item: any) => sum + item.subtotalBrl, 0);
+      const discountPct   = parseFloat(discount || '0');
       const discountValue = (totalBrl * discountPct) / 100;
       const afterDiscount = totalBrl - discountValue;
 
-      // Card fee applied after discount
-      const isCard         = (paymentMethod || 'DINHEIRO') === 'CARTÃO';
-      const cardFeePct     = isCard ? parseFloat(cardFeeRate || '0') : 0;
-      const cardFeeValue   = (afterDiscount * cardFeePct) / 100;
+      // Card fee — supports percentage (PCT) or fixed BRL amount (BRL)
+      const isCard     = (paymentMethod || 'DINHEIRO') === 'CARTÃO';
+      const feeType    = cardFeeType || 'PCT';
+      const feeRate    = isCard ? parseFloat(cardFeeRate || '0') : 0;
+      const cardFeeValue = isCard
+        ? (feeType === 'PCT' ? (afterDiscount * feeRate) / 100 : feeRate)
+        : 0;
 
-      // Returnable deposit
+      // Returnable deposit — only for items where the user explicitly enabled it
       let returnableDepositCharged = 0;
       for (let i = 0; i < productIds.length; i++) {
-        const product = await ProductRepository.findById(parseInt(productIds[i]));
-        if (product && product.isReturnable) {
-          returnableDepositCharged += parseInt(quantities[i]) * config.returnableDepositValue;
+        if (depositEnabled[i] === '1') {
+          const product = await ProductRepository.findById(parseInt(productIds[i]));
+          if (product && product.isReturnable) {
+            const depVal = product.depositValue ?? config.returnableDepositValue;
+            returnableDepositCharged += parseInt(quantities[i]) * depVal;
+          }
         }
       }
 
@@ -520,15 +551,17 @@ export class CrudController {
         }]
       });
 
-      // Record returnable bottle movement per item
+      // Record returnable bottle movement only for items with deposit enabled
       for (let i = 0; i < productIds.length; i++) {
-        const product = await ProductRepository.findById(parseInt(productIds[i]));
-        if (product && product.isReturnable) {
-          await ReturnableRepository.recordSale(
-            parseInt(customerId),
-            parseInt(productIds[i]),
-            parseInt(quantities[i])
-          );
+        if (depositEnabled[i] === '1') {
+          const product = await ProductRepository.findById(parseInt(productIds[i]));
+          if (product && product.isReturnable) {
+            await ReturnableRepository.recordSale(
+              parseInt(customerId),
+              parseInt(productIds[i]),
+              parseInt(quantities[i])
+            );
+          }
         }
       }
 

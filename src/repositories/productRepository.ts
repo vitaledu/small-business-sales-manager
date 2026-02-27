@@ -22,6 +22,7 @@ export class ProductRepository {
     name: string;
     type: string;
     isReturnable?: boolean;
+    depositValue?: number;
     costUnit: number;
     priceUnit: number;
     description?: string;
@@ -46,6 +47,25 @@ export class ProductRepository {
       where: { id },
       data: { status: 'INATIVO' },
     });
+  }
+
+  static async hardDelete(id: number): Promise<void> {
+    // Check if product has any sale or purchase items — refuse if so
+    const saleCount = await prisma.saleItem.count({ where: { productId: id } });
+    if (saleCount > 0) {
+      throw new Error('Este produto possui vendas registradas e não pode ser deletado. Mantenha-o inativo.');
+    }
+    const purchaseCount = await prisma.purchaseItem.count({ where: { productId: id } });
+    if (purchaseCount > 0) {
+      throw new Error('Este produto possui compras registradas e não pode ser deletado. Mantenha-o inativo.');
+    }
+
+    // Safe to delete — remove auxiliary records first, then the product
+    await prisma.$transaction([
+      prisma.returnableLedger.deleteMany({ where: { productId: id } }),
+      prisma.inventoryMovement.deleteMany({ where: { productId: id } }),
+      prisma.product.delete({ where: { id } }),
+    ]);
   }
 
   static async getWarehouse() {

@@ -12,12 +12,13 @@ datasource db {
 
 // ========== PRODUCT ==========
 model Product {
-  id          Int     @id @default(autoincrement())
-  name        String  @unique
-  type        String  // "SACOLÉ" or "DRINK"
+  id           Int     @id @default(autoincrement())
+  name         String  @unique
+  type         String  // "SACOLÉ" or "DRINK"
   isReturnable Boolean @default(false)
-  costUnit    Float   // Custo unitário em BRL
-  priceUnit   Float   // Preço de venda em BRL
+  depositValue Float   @default(5) // Valor do depósito por unidade retornável (BRL)
+  costUnit     Float   // Custo unitário em BRL
+  priceUnit    Float   // Preço de venda em BRL
   description String?
   status      String  @default("ATIVO") // "ATIVO" or "INATIVO"
   createdAt   DateTime @default(now())

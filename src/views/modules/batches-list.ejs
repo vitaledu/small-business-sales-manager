@@ -27,7 +27,7 @@
           <td><strong><%= b.description %></strong></td>
           <td class="text-right"><%= b.quantityProduced %> un.</td>
           <td class="currency text-right">R$ <%= (b.totalCostBrl).toFixed(2) %></td>
-          <td class="currency text-right">R$ <%= (b.costPerUnit || 0).toFixed(3) %></td>
+          <td class="currency text-right">R$ <%= (b.costPerUnit || 0).toFixed(2) %></td>
           <td>
             <% if (b.status === 'COMPLETED') { %>
               <span class="badge badge-success">Finalizado</span>

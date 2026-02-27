@@ -18,11 +18,21 @@
       </select>
     </div>
 
-    <div class="form-group">
-      <label>
-        <input type="checkbox" name="isReturnable" <%= product && product.isReturnable ? 'checked' : '' %> style="margin-right: var(--spacing-sm);">
-        Retornável
+    <div class="form-group" style="display:flex;align-items:center;padding-top:28px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;">
+        <input type="checkbox" name="isReturnable" id="isReturnable" <%= product && product.isReturnable ? 'checked' : '' %> style="width:auto;">
+        Retornável 🔄
       </label>
+    </div>
+  </div>
+
+  <!-- Deposit value — shown only when returnable is checked -->
+  <div id="deposit-group" style="display:<%= product && product.isReturnable ? 'block' : 'none' %>;">
+    <div class="form-group" style="max-width:200px;">
+      <label>Depósito por unidade (R$)</label>
+      <input type="number" name="depositValue" id="depositValue" step="0.01" min="0"
+        value="<%= product && product.depositValue ? product.depositValue : 5 %>">
+      <div class="form-hint">Valor cobrado ao cliente por garrafa retornável</div>
     </div>
   </div>
 
@@ -48,3 +58,9 @@
     <button type="submit" class="btn btn-primary"><%= product ? '💾 Atualizar' : '💾 Criar Produto' %></button>
   </div>
 </form>
+
+<script>
+document.getElementById('isReturnable').addEventListener('change', function() {
+  document.getElementById('deposit-group').style.display = this.checked ? 'block' : 'none';
+});
+</script>

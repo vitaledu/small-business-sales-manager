@@ -29,7 +29,7 @@
             <strong><%= p.name %></strong>
             <div style="font-size: var(--font-size-xs); color: var(--text-secondary); margin-top: var(--spacing-xs);">
               <% if (p.isReturnable) { %>
-                <span class="badge badge-primary">Retornável</span>
+                <span class="badge badge-primary">🔄 Retornável · dep. R$ <%= (p.depositValue || 5).toFixed(2) %></span>
               <% } %>
             </div>
           </td>
@@ -56,10 +56,25 @@
           </td>
           <td>
             <div class="table-actions">
-              <a href="/produtos/<%= p.id %>/editar" class="btn btn-sm btn-light">Editar</a>
-              <form method="POST" action="/produtos/<%= p.id %>/deletar" style="display:inline;">
-                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Deletar este produto?')">Deletar</button>
-              </form>
+              <% if (p.status === 'ATIVO') { %>
+                <a href="/produtos/<%= p.id %>/editar" class="btn btn-sm btn-light">Editar</a>
+                <form method="POST" action="/produtos/<%= p.id %>/inativar" style="display:inline;">
+                  <button type="submit" class="btn btn-sm btn-secondary"
+                    onclick="return confirm('Inativar <%= p.name %>? O produto não aparecerá mais em novas vendas.')">
+                    Inativar
+                  </button>
+                </form>
+              <% } else { %>
+                <form method="POST" action="/produtos/<%= p.id %>/reativar" style="display:inline;">
+                  <button type="submit" class="btn btn-sm btn-success">Reativar</button>
+                </form>
+                <form method="POST" action="/produtos/<%= p.id %>/deletar" style="display:inline;">
+                  <button type="submit" class="btn btn-sm btn-danger"
+                    onclick="return confirm('Deletar permanentemente <%= p.name %>? Só é possível se não houver vendas associadas. Esta ação não pode ser desfeita.')">
+                    Deletar
+                  </button>
+                </form>
+              <% } %>
             </div>
           </td>
         </tr>
