@@ -100,11 +100,49 @@
 
 </div>
 
+<!-- ═══ SIDEBAR BACKDROP (mobile) ═══ -->
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+<!-- ═══ BOTTOM NAV (mobile only) ═══ -->
+<nav class="bottom-nav" id="bottomNav">
+  <a href="/dashboard" class="bottom-nav-item <%= isActive(['dashboard']) %>">
+    <span class="bottom-nav-icon">⊞</span>
+    <span class="bottom-nav-label">Início</span>
+  </a>
+  <a href="/compras" class="bottom-nav-item <%= isActive(['compra']) %>">
+    <span class="bottom-nav-icon">📥</span>
+    <span class="bottom-nav-label">Compras</span>
+  </a>
+  <a href="/vendas/nova" class="bottom-nav-item bottom-nav-cta <%= isActive(['nova venda']) %>">
+    <span class="bottom-nav-cta-circle">💳</span>
+    <span class="bottom-nav-label">Vender</span>
+  </a>
+  <a href="/produtos" class="bottom-nav-item <%= isActive(['produto']) %>">
+    <span class="bottom-nav-icon">📦</span>
+    <span class="bottom-nav-label">Produtos</span>
+  </a>
+  <button class="bottom-nav-item" onclick="toggleSidebar()">
+    <span class="bottom-nav-icon">☰</span>
+    <span class="bottom-nav-label">Menu</span>
+  </button>
+</nav>
+
 <script src="/js/app.js"></script>
 <script>
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
+  var open = document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarBackdrop').classList.toggle('show', open);
+  document.body.style.overflow = open ? 'hidden' : '';
 }
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('show');
+  document.body.style.overflow = '';
+}
+// Close sidebar on ESC
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeSidebar();
+});
 </script>
 </body>
 </html>
