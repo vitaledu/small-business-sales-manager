@@ -58,6 +58,9 @@ router.post('/devolucoes/registrar', CrudController.returnableRegister);
 // ========== REPORTS ==========
 router.get('/relatorios', CrudController.reports);
 
+// ========== MOVIMENTAÇÕES ==========
+router.get('/movimentacoes', SettingsController.movimentacoesList);
+
 // ========== SETTINGS ==========
 router.get('/configuracoes', SettingsController.settingsPage);
 router.post('/configuracoes/exportar', SettingsController.exportData);

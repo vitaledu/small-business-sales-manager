@@ -25,6 +25,21 @@ function fmtNum(n: number | null | undefined): number {
   return Number((n || 0).toFixed(2));
 }
 
+/** Parse "YYYY-MM-DD" as LOCAL midnight (avoids UTC offset shifting the date). */
+function parseLocalDate(dateStr: string, endOfDay = false): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  if (endOfDay) return new Date(y, m - 1, d, 23, 59, 59, 999);
+  return new Date(y, m - 1, d, 0, 0, 0, 0);
+}
+
+/** Format a Date as "YYYY-MM-DD" using LOCAL time (not UTC). */
+function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 // ─── EXPORT ────────────────────────────────────────────────────────────────
 
 async function buildProdutosSheet() {
@@ -165,6 +180,83 @@ export class SettingsController {
     } catch (error: any) {
       res.status(500).render('layout/main', {
         title: 'Configurações',
+        body: `<div class="alert alert-error">Erro: ${error.message}</div>`,
+      });
+    }
+  }
+
+  // GET /movimentacoes
+  static async movimentacoesList(req: Request, res: Response) {
+    try {
+      const PAGE_SIZE = 50;
+      const page = Math.max(1, parseInt((req.query.page as string) || '1', 10));
+
+      const todayLocal = new Date();
+      const defaultStart = new Date(
+        todayLocal.getFullYear(), todayLocal.getMonth(), todayLocal.getDate() - 29
+      );
+      const defaultEnd = new Date(
+        todayLocal.getFullYear(), todayLocal.getMonth(), todayLocal.getDate(), 23, 59, 59, 999
+      );
+
+      const startDate = req.query.startDate
+        ? parseLocalDate(req.query.startDate as string)
+        : defaultStart;
+      const endDate = req.query.endDate
+        ? parseLocalDate(req.query.endDate as string, true)
+        : defaultEnd;
+
+      const tipoFilter   = req.query.tipo   as string | undefined;
+      const motivoFilter = req.query.motivo as string | undefined;
+
+      const where = {
+        createdAt: { gte: startDate, lte: endDate },
+        ...(tipoFilter   && tipoFilter   !== 'TODOS' ? { type:   tipoFilter   } : {}),
+        ...(motivoFilter && motivoFilter !== 'TODOS' ? { reason: motivoFilter } : {}),
+      };
+
+      const [movements, total, sumIn, sumOut] = await Promise.all([
+        prisma.inventoryMovement.findMany({
+          where,
+          include: { product: true },
+          orderBy: { createdAt: 'desc' },
+          skip: (page - 1) * PAGE_SIZE,
+          take: PAGE_SIZE,
+        }),
+        prisma.inventoryMovement.count({ where }),
+        prisma.inventoryMovement.aggregate({
+          where: { ...where, quantity: { gt: 0 } },
+          _sum: { quantity: true },
+          _count: true,
+        }),
+        prisma.inventoryMovement.aggregate({
+          where: { ...where, quantity: { lt: 0 } },
+          _sum: { quantity: true },
+          _count: true,
+        }),
+      ]);
+
+      const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+      const body = await renderLayout(res, 'modules/movimentacoes-list', {
+        movements,
+        total,
+        page,
+        totalPages,
+        pageSize: PAGE_SIZE,
+        totalEntradas: sumIn._count,
+        totalSaidas:   sumOut._count,
+        somaEntradas:  sumIn._sum.quantity  || 0,
+        somaSaidas:    sumOut._sum.quantity || 0,
+        startDate: toLocalDateStr(startDate),
+        endDate:   toLocalDateStr(endDate),
+        tipoFilter:   tipoFilter   || 'TODOS',
+        motivoFilter: motivoFilter || 'TODOS',
+      });
+      res.render('layout/main', { title: 'Movimentações', body });
+    } catch (error: any) {
+      res.status(500).render('layout/main', {
+        title: 'Movimentações',
         body: `<div class="alert alert-error">Erro: ${error.message}</div>`,
       });
     }
