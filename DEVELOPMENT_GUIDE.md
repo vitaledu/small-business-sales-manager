@@ -161,6 +161,40 @@ Não use `.toISOString().slice(0,10)` para formatar datas — retorna a data em 
 
 ---
 
+## Layout Responsivo / Mobile
+
+O sistema usa breakpoints em `src/public/css/custom.css`:
+
+| Breakpoint | Comportamento |
+|------------|--------------|
+| > 900px (desktop) | Sidebar fixa à esquerda, sem bottom nav |
+| ≤ 900px (tablet/mobile) | Sidebar oculta (slide-in), bottom nav visível, topbar com hambúrguer |
+| ≤ 600px (mobile) | Filter-bar em coluna, grids de 1 coluna, tabelas com scroll horizontal |
+
+### Bottom Nav
+
+Definido em `src/views/layout/main.ejs` após o `.app-shell`. Só fica visível via CSS em telas ≤ 900px.
+
+Itens: ⊞ Dashboard · 📥 Compras · 💳 Nova Venda (CTA destacado) · 📦 Produtos · ☰ Menu (abre sidebar).
+
+A detecção de item ativo usa a função `isActive()` já existente no layout, que compara o `title` da página com palavras-chave.
+
+### Sidebar no mobile
+
+A sidebar desliza sobre o conteúdo com `transform: translateX`. Um backdrop semi-transparente é exibido atrás. O JS em `main.ejs` gerencia as classes `open` / `show` e bloqueia `body.overflow` enquanto aberta.
+
+```javascript
+function toggleSidebar() { /* toggle .open na sidebar e .show no backdrop */ }
+function closeSidebar()   { /* remove ambas as classes */ }
+// Também fecha ao pressionar ESC
+```
+
+### Filter-bar no mobile
+
+`.filter-bar` vira coluna em ≤ 600px (`flex-direction: column; align-items: stretch`). Os campos de input/select esticam para largura total. O grupo do botão "Filtrar" usa `:has(> .btn)` para receber `align-self: flex-start` e não esticar junto com os campos.
+
+---
+
 ## Adicionar uma Nova Funcionalidade
 
 ### Exemplo: Ajuste Manual de Estoque

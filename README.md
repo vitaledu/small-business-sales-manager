@@ -1,6 +1,6 @@
 # Sistema de Gestão — Sacolé & Bebidas
 
-Aplicação web local para gerenciar produção, estoque, compras e vendas de sacolé e bebidas, com rastreamento de garrafas retornáveis.
+Aplicação web local para gerenciar produção, estoque, compras e vendas de sacolé e bebidas, com rastreamento de garrafas retornáveis. Funciona no computador e no **celular via WiFi** — sem instalar nada no celular.
 
 **Stack:** Node.js · TypeScript · Express · Prisma ORM · SQLite · EJS
 
@@ -32,7 +32,42 @@ npm run prisma:seed
 npm run dev
 ```
 
-Acesse **http://localhost:3000**
+Acesse **http://localhost:3000** no computador ou **http://[IP-DA-MAQUINA]:3000** no celular (mesma rede WiFi).
+
+---
+
+## Acesso Mobile
+
+O sistema é totalmente responsivo e funciona no celular sem instalar nada.
+
+### Como acessar pelo celular
+
+1. Computador e celular precisam estar na **mesma rede WiFi**
+2. Descubra o IP do computador: abra o terminal e rode `ipconfig` — procure "Endereço IPv4" (ex: `192.168.3.9`)
+3. No celular, acesse `http://192.168.3.9:3000`
+4. Se não carregar, libere a porta 3000 no Firewall do Windows (veja [Configuração de Firewall](#firewall))
+
+### Interface mobile
+
+Em telas ≤ 900px a sidebar é ocultada e aparece uma **barra de navegação inferior** com os atalhos principais:
+
+| Ícone | Destino |
+|-------|---------|
+| ⊞ Início | Dashboard |
+| 📥 Compras | Lista de compras |
+| 💳 Vender | Nova venda (botão destacado) |
+| 📦 Produtos | Lista de produtos |
+| ☰ Menu | Abre a sidebar completa |
+
+Toque em **☰ Menu** para acessar Lotes, Devoluções, Relatórios, Movimentações e Configurações.
+
+### Firewall {#firewall}
+
+Para liberar a porta 3000, abra o **PowerShell como Administrador** e execute:
+
+```powershell
+New-NetFirewallRule -DisplayName "Sacole3000" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow -Profile Private
+```
 
 ---
 

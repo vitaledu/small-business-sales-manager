@@ -1,6 +1,26 @@
 # Guia de Uso — Sistema de Gestão Sacolé & Bebidas
 
-Acesse o sistema em **http://localhost:3000** após iniciar com `npm run dev`.
+Acesse o sistema em **http://localhost:3000** (computador) ou **http://192.168.3.9:3000** (celular na mesma WiFi) após iniciar com `npm run dev`.
+
+---
+
+## Usando no Celular
+
+O sistema funciona direto no navegador do celular — sem instalar nada.
+
+**Pré-requisito:** computador e celular na mesma rede WiFi.
+
+### Navegação mobile
+
+Em vez da barra lateral, o celular exibe uma **barra de navegação na parte inferior** da tela:
+
+```
+[ ⊞ Início ]  [ 📥 Compras ]  [ 💳 Vender ]  [ 📦 Produtos ]  [ ☰ Menu ]
+```
+
+- O botão **💳 Vender** fica levemente elevado e destacado em azul — é o atalho para nova venda
+- O botão **☰ Menu** abre a sidebar deslizante com todas as outras seções (Lotes, Devoluções, Relatórios, Movimentações, Configurações)
+- Toque fora da sidebar ou pressione o backdrop escuro para fechá-la
 
 ---
 
