@@ -1,365 +1,228 @@
-# 📦 Sistema de Gestão - Sacolé & Bebidas v2.0
+# Sistema de Gestão — Sacolé & Bebidas
 
-**Refactoring Completo - Produção Pronto**
+Aplicação web local para gerenciar produção, estoque, compras e vendas de sacolé e bebidas, com rastreamento de garrafas retornáveis.
 
-Aplicação Node.js + TypeScript para gerenciar produção, estoque e vendas de sacolé e bebidas com rastreamento de garrafas retornáveis.
+**Stack:** Node.js · TypeScript · Express · Prisma ORM · SQLite · EJS
 
-## 🚀 Características Principais
+---
 
-- ✅ **Gerenciamento de Produtos**: Sacolé e bebidas com custos e preços
-- ✅ **Controle de Estoque**: Rastreamento em tempo real de entradas e saídas
-- ✅ **Produção de Lotes**: Calcular custo por unidade de sacolé
-- ✅ **Gestão de Clientes**: Pessoas físicas e revendedores
-- ✅ **Registro de Vendas**: POS simples com múltiplos métodos de pagamento
-- ✅ **Garrafas Retornáveis**: Rastreamento de depósitos e devoluções
-- ✅ **Relatórios**: Lucro, melhores vendas, inventário, devoluções pendentes
-- ✅ **Histórico/Auditoria**: Log de todas as operações
-- ✅ **Interface em Português**: 100% localizado
+## Instalação e Inicialização
 
-## 🛠️ Tech Stack
-
-- **Runtime**: Node.js 18+
-- **Language**: TypeScript
-- **Framework**: Express.js
-- **Database**: SQLite + Prisma ORM
-- **Validation**: Zod
-- **Frontend**: Server-rendered EJS + Pico CSS
-- **Testing**: Jest
-
-## 📋 Pré-requisitos
-
-- Node.js 18+ (download em https://nodejs.org/)
-- npm 8+ (vem com Node.js)
-- Windows/Mac/Linux
-- VS Code (recomendado)
-
-## ⚡ Quick Start
-
-### 1. Clone ou Prepare o Projeto
-
-```bash
-cd "c:\Users\Eduardo\Documents\Projeto Venda Sacole Viviane"
-```
-
-### 2. Instale Dependências
+### 1. Instalar dependências
 
 ```bash
 npm install
 ```
 
-Isso instalará todas as dependências listadas em `package.json`:
-- Express, Prisma, Zod, TypeScript, etc.
+### 2. Criar o banco de dados
 
-### 3. Configure o Banco de Dados
-
-#### a) Gere o cliente Prisma
-```bash
-npm run prisma:generate
-```
-
-#### b) Crie o banco de dados e aplique migrations
 ```bash
 npm run db:push
 ```
 
-#### c) Populate com dados de exemplo (seed)
+### 3. Popular com dados de exemplo (opcional)
+
 ```bash
 npm run prisma:seed
 ```
 
-Isso criará:
-- 4 produtosde exemplo (sacolés e bebidas)
-- 3 clientes de teste
-- 1 lote de produção
-- 1 compra
-- 1 venda com garrafa retornável pendente
-
-### 4. Inicie o Servidor
+### 4. Iniciar o servidor
 
 ```bash
 npm run dev
 ```
 
-Você verá:
-```
-╔════════════════════════════════════════════════════════════╗
-║  🚀 Sistema de Gestão - Sacolé & Bebidas               ║
-║  ─────────────────────────────────────────────────────    ║
-║  Servidor rodando em: http://localhost:3000           ║
-║  Ambiente: DEVELOPMENT                                    ║
-║  Moeda: BRL                                        ║
-║  Depósito Garrafa: R$ 5.00                   ║
-╚════════════════════════════════════════════════════════════╝
-```
-
-### 5. Acesse a Aplicação
-
-Abra seu navegador em: **http://localhost:3000**
-
-## 📱 URLs Principais
-
-| Rota | Descrição |
-|------|-----------|
-| `GET /` | Dashboard |
-| `GET /produtos` | Lista de produtos |
-| `GET /clientes` | Lista de clientes |
-| `GET /vendas/nova` | Nova venda |
-| `GET /relatorios` | Relatórios |
-| `GET /devolucoes` | Devoluções de garrafas |
-| `GET /api/health` | Status da API |
-
-## 🔌 API Endpoints (REST)
-
-### Produtos
-```bash
-GET    /api/products              # Listar todos
-POST   /api/products              # Criar novo
-GET    /api/products/:id          # Detalhe
-PUT    /api/products/:id          # Atualizar
-DELETE /api/products/:id          # Deletar (marcar inativo)
-GET    /api/products/warehouse    # Estoque completo
-```
-
-### Clientes
-```bash
-GET    /api/customers             # Listar
-POST   /api/customers             # Criar
-GET    /api/customers/:id         # Detalhe com retornáveis
-POST   /api/customers/:id/return-bottles  # Registrar devolução
-```
-
-### Vendas
-```bash
-POST   /api/sales                 # Criar venda
-GET    /api/sales/detail/:id      # Detalhe da venda
-GET    /api/sales/date-range?startDate=&endDate=  # Por período
-GET    /api/sales/customer/:customerId # Por cliente
-```
-
-### Relatórios
-```bash
-GET    /api/reports/profit?startDate=&endDate=    # Lucro
-GET    /api/reports/best-sellers?startDate=&endDate=&limit=10
-GET    /api/reports/inventory                     # Estoque
-GET    /api/reports/returnables/outstanding       # Garrafas pendentes
-```
-
-### Exemplo de Requisição (curl)
-
-```bash
-# Criar novo cliente
-curl -X POST http://localhost:3000/api/customers \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Maria Silva",
-    "type": "PF",
-    "phone": "11987654321",
-    "neighborhood": "Centro"
-  }'
-
-# Criar venda
-curl -X POST http://localhost:3000/api/sales \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customerId": 1,
-    "items": [
-      {
-        "productId": 1,
-        "quantity": 5,
-        "priceUnitBrl": 1.00
-      }
-    ],
-    "paymentMethod": "PIX"
-  }'
-
-# Consultar lucro do dia
-curl "http://localhost:3000/api/reports/profit?startDate=2024-02-26&endDate=2024-02-26"
-```
-
-## 🗄️ Banco de Dados
-
-O banco de dados SQLite é armazenado em:
-```
-prisma/dev.db
-```
-
-### Tabelas Principais
-
-- **Product**: Produtos (sacolé, bebidas)
-- **Customer**: Clientes
-- **SaleOrder**: Vendas
-- **SaleItem**: Itens de cada venda
-- **ProductionBatch**: Lotes de produção
-- **InventoryMovement**: Histórico de entradas/saídas
-- **ReturnableLedger**: Rastreamento de garrafas
-- **AuditLog**: Log de operações
-
-### Reset do Banco (Limpar e Recriar)
-
-```bash
-npm run db:reset
-```
-
-⚠️ Isso **deletará todos os dados** e recriará com dados de exemplo.
-
-## 🔧 Configuração
-
-Crie um arquivo `.env` na raiz do projeto (copie `.env.example`):
-
-```bash
-cp .env.example .env
-```
-
-Edite conforme necessário:
-
-```env
-# Database
-DATABASE_URL="file:./dev.db"
-
-# Server
-NODE_ENV="development"
-PORT=3000
-
-# Business
-RETURNABLE_DEPOSIT_VALUE=5.00  # Depósito por garrafa em BRL
-CURRENCY="BRL"
-TIMEZONE="America/Sao_Paulo"
-
-# Segurança opcional
-SYSTEM_PIN=""                  # Deixar vazio para sem PIN
-```
-
-## 📝 Estrutura do Projeto
-
-```
-src/
-├── types/              # TypeScript interfaces
-├── controllers/        # Route handlers (HTTP logic)
-├── services/          # Business logic
-├── repositories/      # Data access layer
-├── middleware/        # Express middleware
-├── routes/            # API routes
-├── views/            # EJS templates (UI)
-├── public/           # Static assets (CSS, JS)
-├── utils/            # Helper functions
-├── db/               # Prisma client
-├── app.ts            # Express setup
-└── server.ts         # Entry point
-
-prisma/
-├── schema.prisma     # Data model
-├── seed.ts          # Example data
-└── dev.db           # SQLite database
-
-package.json          # Dependencies
-tsconfig.json         # TypeScript config
-jest.config.js        # Test config
-.env                  # Ambiente variables
-README.md             # Este arquivo
-```
-
-## 🧪 Testes
-
-### Executar Testes
-```bash
-npm test
-```
-
-### Testes em Watch Mode (re-executa ao salvar)
-```bash
-npm run test:watch
-```
-
-## 🏗️ Build para Produção
-
-```bash
-npm run build
-```
-
-Isso compila TypeScript para JavaScript em `dist/`.
-
-Para iniciar a versão compilada:
-```bash
-npm start
-```
-
-## 📚 Desenvolvimento
-
-### Hot Reload
-Quando você edita arquivos `.ts`, o servidor reinicia automaticamente com `npm run dev`.
-
-### Debug
-Para debug, use:
-```bash
-node --inspect -r ts-node/register src/server.ts
-```
-E abra `chrome://inspect` no Chrome.
-
-## 🐛 Troubleshooting
-
-### Error: "Cannot find module 'prisma'"
-```bash
-npm install @prisma/client prisma
-```
-
-### Error: "Port 3000 already in use"
-Mude a porta em `.env`:
-```env
-PORT=3001
-```
-
-### Banco de dados corrompido
-Delete o arquivo `prisma/dev.db` e recrie:
-```bash
-npm run db:reset
-```
-
-### Módulos TypeScript não encontrados
-```bash
-npm run prisma:generate
-```
-
-## 📖 Próximos Passos
-
-1. **Implementar UI interativa** (adicionar mais HTML/JavaScript)
-2. **Adicionar autenticação** (PIN simples ou login)
-3. **Criar mobile app** (React Native ou Flutter)
-4. **Integração de pagamento** (PIX, Gateway)
-5. **Backup automático** (S3, Google Drive)
-6. **Dashboard gráfico** (Charts.js, D3)
-7. **Funcionalidades avançadas** (Crediário, despesas, metas)
-
-## 📞 Suporte & Roadmap
-
-### Versão 1.0 (MVP - Atual)
-- ✅ Produtos, Clientes, Vendas
-- ✅ Estoque, Lotes, Garrafas
-- ✅ Relatórios básicos
-- ✅ API REST
-
-### Versão 1.5 (Planejado)
-- [ ] UI mais polida (dashboard gráfico)
-- [ ] Formulários completos e validações
-- [ ] Backup automático
-- [ ] Relatórios em PDF
-
-### Versão 2.0 (Futuro)
-- [ ] Multi-usuário com permissões
-- [ ] Aplicativo mobile (leitura de QR)
-- [ ] Integração com redes sociais
-- [ ] IA para previsão de demanda
-
-## 📄 Licença
-
-MIT - Use livremente!
-
-## 👩‍💻 Desenvolvedor
-
-Desenvolvido com ❤️ para Viviane.
+Acesse **http://localhost:3000**
 
 ---
 
-**Dúvidas?** Revise a [Especificação Completa](./SPEC.md) (não incluída aqui, mas referenciada no PRD).
+## Funcionalidades
 
-**Última atualização**: 26 de Fevereiro de 2024  
-**Status**: 🟢 Pronto para desenvolvimento
+### Produtos
+
+- Cadastro com nome, tipo (Sacolé / Bebida / Outros), origem (Produzido / Comprado), preço, custo e descrição
+- Campo de valor de depósito retornável por produto (usado automaticamente nas vendas)
+- Ciclo de vida: **Ativo → Inativo → Ativo** (inativar / reativar) ou **Deletar** (só produtos sem movimentações)
+- Custo médio ponderado atualizado automaticamente a cada compra recebida ou lote finalizado
+
+### Clientes
+
+- Cadastro com nome, tipo (PF / PJ), telefone, logradouro e bairro
+- Histórico de retornáveis por cliente
+
+### Compras
+
+- Criação em rascunho (DRAFT) com fornecedor e itens
+- **Receber:** finaliza a compra, dá entrada no estoque e atualiza custo médio ponderado dos produtos
+- **Cancelar:** exclui a compra enquanto ainda em DRAFT (sem movimentações geradas)
+- **Estornar Recebimento:** devolve estoque de forma parcial ou total, com controle de quantidade já estornada por item; marca a compra como CANCELADA quando 100% estornada
+
+### Lotes de Produção
+
+- Registro de lotes com custo total e quantidade produzida
+- Calcula custo por unidade automaticamente
+- Finalizar: dá entrada no estoque e atualiza custo médio ponderado do produto
+
+### Vendas
+
+- Seleção de cliente e múltiplos itens
+- Validação de estoque em tempo real: não permite quantidade acima do disponível; exibe balão indicando o estoque atual ao tentar exceder
+- Depósito retornável opcional por item (usa o valor de depósito configurado no produto)
+- Métodos de pagamento: Dinheiro, PIX, Débito, Crédito (com taxa em % ou R$ fixo)
+- **Desfazer venda:** modal pergunta se o produto foi devolvido — se sim, restaura o estoque; se não, apenas cancela o faturamento
+
+### Devoluções de Retornáveis
+
+- Registro de devoluções de garrafas por cliente
+- Atualiza o saldo de retornáveis pendentes
+
+### Relatórios
+
+- Visão geral de vendas, lucro, produtos mais vendidos e estoque atual
+
+### Movimentações de Estoque
+
+- Histórico completo de todas as entradas e saídas de estoque
+- Filtros por período (data inicial / data final), tipo (Entrada / Saída) e motivo (Venda, Compra, Produção, Cancelamento, Estorno Compra, Ajuste)
+- Filtros rápidos: Hoje, Ontem, Esta Semana, Este Mês, Tudo
+- Paginação com 50 registros por página
+- Cards de resumo do período (total, entradas, saídas) independentes da página atual
+- Busca local por produto, motivo ou referência
+
+### Configurações
+
+- **Exportar Backup:** gera arquivo `.xlsx` com as categorias selecionadas (Produtos, Clientes, Vendas, Compras, Lotes, Movimentações). Cada categoria vira uma aba separada.
+- **Importar Dados:** importa Produtos e Clientes de um `.xlsx` no mesmo formato do backup; registros com nomes já existentes são ignorados automaticamente
+- **Zerar Dados:** remove permanentemente as categorias selecionadas, com modal de confirmação exigindo digitação de `CONFIRMAR`; valida dependências (ex: não zera Clientes enquanto houver Vendas)
+
+---
+
+## Rotas
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET | `/` | Dashboard |
+| GET | `/produtos` | Lista de produtos |
+| GET | `/produtos/novo` | Formulário de novo produto |
+| POST | `/produtos` | Criar produto |
+| GET | `/produtos/:id/editar` | Formulário de edição |
+| POST | `/produtos/:id/editar` | Salvar edição |
+| POST | `/produtos/:id/inativar` | Inativar produto |
+| POST | `/produtos/:id/reativar` | Reativar produto |
+| POST | `/produtos/:id/deletar` | Deletar produto |
+| GET | `/clientes` | Lista de clientes |
+| GET | `/clientes/novo` | Novo cliente |
+| POST | `/clientes` | Criar cliente |
+| GET | `/clientes/:id/editar` | Editar cliente |
+| POST | `/clientes/:id/editar` | Salvar edição |
+| POST | `/clientes/:id/deletar` | Deletar cliente |
+| GET | `/compras` | Lista de compras |
+| GET | `/compras/nova` | Nova compra |
+| POST | `/compras/nova` | Criar compra |
+| POST | `/compras/:id/finalizar` | Receber compra |
+| POST | `/compras/:id/cancelar` | Cancelar DRAFT |
+| POST | `/compras/:id/estornar` | Estornar recebimento |
+| POST | `/compras/:id/deletar` | Deletar compra |
+| GET | `/lotes` | Lista de lotes |
+| GET | `/lotes/novo` | Novo lote |
+| POST | `/lotes/novo` | Criar lote |
+| POST | `/lotes/:id/finalizar` | Finalizar lote |
+| POST | `/lotes/:id/deletar` | Deletar lote |
+| GET | `/vendas` | Lista de vendas |
+| GET | `/vendas/nova` | Nova venda |
+| POST | `/vendas` | Criar venda |
+| POST | `/vendas/:id/cancelar` | Desfazer venda |
+| GET | `/devolucoes` | Devoluções de retornáveis |
+| POST | `/devolucoes/registrar` | Registrar devolução |
+| GET | `/relatorios` | Relatórios |
+| GET | `/movimentacoes` | Movimentações de estoque |
+| GET | `/configuracoes` | Configurações |
+| POST | `/configuracoes/exportar` | Download do backup Excel |
+| POST | `/configuracoes/importar` | Importar Excel |
+| POST | `/configuracoes/zerar` | Zerar dados |
+
+---
+
+## Estrutura do Projeto
+
+```
+src/
+├── controllers/
+│   ├── crudController.ts       # Dashboard, produtos, clientes, compras, lotes, vendas, devoluções, relatórios
+│   └── settingsController.ts   # Movimentações, configurações, backup, importação, zeramento
+├── repositories/
+│   ├── productRepository.ts    # Acesso a produtos e cálculo de estoque
+│   ├── purchaseRepository.ts   # Compras, cancelamento, estorno
+│   └── ...
+├── routes/
+│   └── crud.ts                 # Todas as rotas da aplicação
+├── views/
+│   ├── layout/
+│   │   └── main.ejs            # Layout base com sidebar
+│   └── modules/
+│       ├── dashboard.ejs
+│       ├── products-list.ejs / product-form.ejs
+│       ├── customers-list.ejs / customer-form.ejs
+│       ├── purchases-list.ejs / purchase-form.ejs
+│       ├── batches-list.ejs / batch-form.ejs
+│       ├── sales-list.ejs / sale-form.ejs
+│       ├── returnables-list.ejs
+│       ├── reports.ejs
+│       ├── movimentacoes-list.ejs
+│       └── settings.ejs
+├── public/
+│   └── css/custom.css
+├── db/client.ts
+└── server.ts
+
+prisma/
+├── schema.prisma
+└── dev.db
+```
+
+---
+
+## Banco de Dados
+
+Arquivo SQLite em `prisma/dev.db`.
+
+### Modelos principais
+
+| Modelo | Descrição |
+|--------|-----------|
+| `Product` | Produtos com custo médio ponderado, origem, depósito |
+| `Customer` | Clientes com saldo de retornáveis |
+| `PurchaseOrder` / `PurchaseItem` | Compras (DRAFT / RECEIVED / CANCELLED) |
+| `ProductionBatch` | Lotes de produção (OPEN / COMPLETED) |
+| `SaleOrder` / `SaleItem` | Vendas (COMPLETED / CANCELLED) |
+| `InventoryMovement` | Todas as movimentações de estoque (raiz da verdade do estoque) |
+| `ReturnableLedger` | Saldo de garrafas retornáveis por cliente |
+
+O estoque de cada produto é calculado como a **soma de todas as `InventoryMovement`** (valores positivos = entrada, negativos = saída).
+
+---
+
+## Scripts
+
+```bash
+npm run dev          # Inicia servidor em modo desenvolvimento (ts-node)
+npm run build        # Compila TypeScript para dist/
+npm start            # Inicia versão compilada
+npm run db:push      # Cria/atualiza banco de dados
+npm run db:reset     # Apaga e recria o banco (perde todos os dados)
+npm run prisma:seed  # Popula com dados de exemplo
+npm test             # Executa testes (Jest)
+```
+
+---
+
+## Observações Técnicas
+
+- **Sem hot reload:** alterações em arquivos `.ts` exigem reiniciar o servidor. Templates `.ejs` recarregam automaticamente a cada requisição.
+- **UTC vs. hora local:** datas são sempre parseadas como meia-noite local (`new Date(y, m-1, d)`) para evitar o deslocamento de fuso UTC-3 que afeta `new Date("YYYY-MM-DD")`.
+- **Custo médio ponderado:** calculado antes de gravar a movimentação de entrada — `(estoqueAtual × custoAtual + qtdNova × custoNovo) / (estoqueAtual + qtdNova)`.
+- **JSON em atributos HTML:** dados passados para modais usam `encodeURIComponent(JSON.stringify(...))` para evitar quebra por aspas em nomes de produtos.
+
+---
+
+Desenvolvido para Viviane. Última atualização: fevereiro de 2026.
