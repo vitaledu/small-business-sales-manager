@@ -1,5 +1,9 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { CrudController } from '@/controllers/crudController';
+import { SettingsController } from '@/controllers/settingsController';
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
 const router = Router();
 
@@ -30,6 +34,8 @@ router.get('/compras', CrudController.purchasesList);
 router.get('/compras/nova', CrudController.purchasesNewForm);
 router.post('/compras/nova', CrudController.purchasesCreate);
 router.post('/compras/:id/finalizar', CrudController.purchasesFinalize);
+router.post('/compras/:id/cancelar', CrudController.purchasesCancel);
+router.post('/compras/:id/estornar', CrudController.purchasesReverse);
 router.post('/compras/:id/deletar', CrudController.purchasesDelete);
 
 // ========== PRODUCTION BATCHES ==========
@@ -43,6 +49,7 @@ router.post('/lotes/:id/deletar', CrudController.batchesDelete);
 router.get('/vendas', CrudController.salesList);
 router.get('/vendas/nova', CrudController.salesNew);
 router.post('/vendas', CrudController.salesCreate);
+router.post('/vendas/:id/cancelar', CrudController.salesCancel);
 
 // ========== RETURNABLES ==========
 router.get('/devolucoes', CrudController.returnablesList);
@@ -50,5 +57,11 @@ router.post('/devolucoes/registrar', CrudController.returnableRegister);
 
 // ========== REPORTS ==========
 router.get('/relatorios', CrudController.reports);
+
+// ========== SETTINGS ==========
+router.get('/configuracoes', SettingsController.settingsPage);
+router.post('/configuracoes/exportar', SettingsController.exportData);
+router.post('/configuracoes/importar', upload.single('file'), SettingsController.importData);
+router.post('/configuracoes/zerar', SettingsController.resetData);
 
 export default router;

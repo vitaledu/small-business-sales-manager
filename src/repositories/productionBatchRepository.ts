@@ -53,7 +53,26 @@ export class ProductionBatchRepository {
     const batch = await this.findById(id);
     if (!batch) throw new Error('Lote não encontrado');
 
-    // Record inventory movement
+    // Get current stock BEFORE this batch to calculate weighted average
+    const stockResult = await prisma.inventoryMovement.aggregate({
+      where: { productId },
+      _sum: { quantity: true }
+    });
+    const currentStock = Math.max(0, stockResult._sum.quantity || 0);
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { costUnit: true }
+    });
+    const currentCost = product?.costUnit || 0;
+    const batchCostPerUnit = batch.costPerUnit || 0;
+
+    // Custo médio ponderado: (estoque_atual * custo_atual + qtd_lote * custo_lote) / total
+    const newAvgCost = currentStock > 0
+      ? (currentStock * currentCost + batch.quantityProduced * batchCostPerUnit) / (currentStock + batch.quantityProduced)
+      : batchCostPerUnit;
+
+    // Registra entrada no estoque
     await prisma.inventoryMovement.create({
       data: {
         productId,
@@ -65,7 +84,12 @@ export class ProductionBatchRepository {
       }
     });
 
-    // Mark batch as completed
+    // Atualiza custo do produto com média ponderada
+    await prisma.product.update({
+      where: { id: productId },
+      data: { costUnit: newAvgCost }
+    });
+
     return this.update(id, { status: 'COMPLETED' });
   }
 

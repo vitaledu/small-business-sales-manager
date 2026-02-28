@@ -3,6 +3,7 @@ export interface IProduct {
   id: number;
   name: string;
   type: 'SACOLÉ' | 'DRINK';
+  origin?: string;
   isReturnable: boolean;
   depositValue?: number;
   costUnit: number;

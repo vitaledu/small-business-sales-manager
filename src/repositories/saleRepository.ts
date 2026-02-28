@@ -67,16 +67,11 @@ export class SaleRepository {
   static async findByDateRange(startDate: Date, endDate: Date) {
     return prisma.saleOrder.findMany({
       where: {
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-        status: 'FINALIZADA',
+        date: { gte: startDate, lte: endDate },
+        status: { in: ['FINALIZADA', 'CANCELADA'] },
       },
       include: {
-        items: {
-          include: { product: true },
-        },
+        items: { include: { product: true } },
         customer: true,
       },
       orderBy: { date: 'desc' },
@@ -105,6 +100,26 @@ export class SaleRepository {
         referenceType: 'SALE',
         referenceId: saleId.toString(),
       },
+    });
+  }
+
+  static async restoreInventory(productId: number, quantity: number, saleId: number) {
+    return prisma.inventoryMovement.create({
+      data: {
+        productId,
+        type: 'IN',
+        quantity: quantity,
+        reason: 'CANCELAMENTO',
+        referenceType: 'SALE',
+        referenceId: saleId.toString(),
+      },
+    });
+  }
+
+  static async cancel(id: number) {
+    return prisma.saleOrder.update({
+      where: { id },
+      data: { status: 'CANCELADA' },
     });
   }
 }

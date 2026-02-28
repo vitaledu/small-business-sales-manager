@@ -21,6 +21,7 @@ export class ProductRepository {
   static async create(data: {
     name: string;
     type: string;
+    origin?: string;
     isReturnable?: boolean;
     depositValue?: number;
     costUnit: number;
@@ -66,6 +67,29 @@ export class ProductRepository {
       prisma.inventoryMovement.deleteMany({ where: { productId: id } }),
       prisma.product.delete({ where: { id } }),
     ]);
+  }
+
+  /** Returns the current stock for a single product (sum of all inventory movements). */
+  static async getStock(productId: number): Promise<number> {
+    const result = await prisma.inventoryMovement.aggregate({
+      where: { productId },
+      _sum: { quantity: true },
+    });
+    return result._sum.quantity || 0;
+  }
+
+  /** Returns a map of productId → current stock for a set of products (single query). */
+  static async getStockMap(productIds: number[]): Promise<Record<number, number>> {
+    const movements = await prisma.inventoryMovement.groupBy({
+      by: ['productId'],
+      where: { productId: { in: productIds } },
+      _sum: { quantity: true },
+    });
+    const map: Record<number, number> = {};
+    for (const m of movements) {
+      map[m.productId] = m._sum.quantity || 0;
+    }
+    return map;
   }
 
   static async getWarehouse() {

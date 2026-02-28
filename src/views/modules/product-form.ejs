@@ -2,7 +2,7 @@
   <h1><%= product ? '✏️ Editar Produto' : '➕ Novo Produto' %></h1>
 </div>
 
-<form method="POST" action="<%= product ? '/produtos/' + product.id + '/editar' : '/produtos' %>" class="form-card form-card-narrow">
+<form method="POST" action="<%= product ? '/produtos/' + product.id + '/editar' : '/produtos' %>" class="form-card">
   <div class="form-group">
     <label>Nome do Produto *</label>
     <input type="text" name="name" value="<%= product ? product.name : '' %>" required>
@@ -15,6 +15,14 @@
         <option value="">Selecione...</option>
         <option value="SACOLÉ" <%= product && product.type === 'SACOLÉ' ? 'selected' : '' %>>Sacolé</option>
         <option value="BEBIDA" <%= product && product.type === 'BEBIDA' ? 'selected' : '' %>>Bebida</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Origem *</label>
+      <select name="origin" required>
+        <option value="PRODUZIDO" <%= !product || product.origin === 'PRODUZIDO' ? 'selected' : '' %>>🏭 Produzido (eu fabrico)</option>
+        <option value="COMPRADO"  <%= product && product.origin === 'COMPRADO'  ? 'selected' : '' %>>🛒 Comprado (de fornecedor)</option>
       </select>
     </div>
 

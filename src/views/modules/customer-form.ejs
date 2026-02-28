@@ -2,7 +2,7 @@
   <h1><%= customer ? '✏️ Editar Cliente' : '➕ Novo Cliente' %></h1>
 </div>
 
-<form method="POST" action="<%= customer ? '/clientes/' + customer.id + '/editar' : '/clientes' %>" class="form-card form-card-narrow">
+<form method="POST" action="<%= customer ? '/clientes/' + customer.id + '/editar' : '/clientes' %>" class="form-card">
   <div class="form-group">
     <label>Nome Completo *</label>
     <input type="text" name="name" value="<%= customer ? customer.name : '' %>" required>

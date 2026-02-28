@@ -1,0 +1,186 @@
+<div class="page-header">
+  <div>
+    <h1>Configurações</h1>
+    <p style="margin:0; color:var(--text-secondary);">Backup, importação e zeramento de dados</p>
+  </div>
+</div>
+
+<!-- Summary counts -->
+<div class="dashboard-grid" style="margin-bottom:var(--spacing-2xl);">
+  <div class="stat-card"><div class="stat-label">Produtos</div><div class="stat-value"><%= counts.produtos %></div></div>
+  <div class="stat-card"><div class="stat-label">Clientes</div><div class="stat-value"><%= counts.clientes %></div></div>
+  <div class="stat-card"><div class="stat-label">Vendas</div><div class="stat-value"><%= counts.vendas %></div></div>
+  <div class="stat-card"><div class="stat-label">Compras</div><div class="stat-value"><%= counts.compras %></div></div>
+  <div class="stat-card"><div class="stat-label">Lotes</div><div class="stat-value"><%= counts.lotes %></div></div>
+  <div class="stat-card"><div class="stat-label">Movimentos</div><div class="stat-value"><%= counts.movimentos %></div></div>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:var(--spacing-xl); align-items:start;">
+
+  <!-- ═══ BACKUP / EXPORTAR ═══ -->
+  <div class="form-card" style="margin:0;">
+    <h2 style="font-size:1rem; margin:0 0 4px;">📤 Exportar Backup</h2>
+    <p style="font-size:var(--font-size-sm); color:var(--text-secondary); margin:0 0 20px;">
+      Gera um arquivo <strong>.xlsx</strong> (Excel) com os dados selecionados. Cada categoria vira uma aba separada.
+    </p>
+
+    <form method="POST" action="/configuracoes/exportar">
+      <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+        <label class="check-row"><input type="checkbox" name="categories" value="produtos" checked> Produtos</label>
+        <label class="check-row"><input type="checkbox" name="categories" value="clientes" checked> Clientes</label>
+        <label class="check-row"><input type="checkbox" name="categories" value="vendas" checked> Vendas e itens de venda</label>
+        <label class="check-row"><input type="checkbox" name="categories" value="compras" checked> Compras e itens de compra</label>
+        <label class="check-row"><input type="checkbox" name="categories" value="lotes" checked> Lotes de produção</label>
+        <label class="check-row"><input type="checkbox" name="categories" value="movimentos" checked> Movimentos de estoque</label>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;">⬇ Baixar Excel</button>
+    </form>
+  </div>
+
+  <!-- ═══ IMPORTAR ═══ -->
+  <div class="form-card" style="margin:0;">
+    <h2 style="font-size:1rem; margin:0 0 4px;">📥 Importar Dados</h2>
+    <p style="font-size:var(--font-size-sm); color:var(--text-secondary); margin:0 0 12px;">
+      Importa <strong>Produtos</strong> e <strong>Clientes</strong> de um arquivo <code>.xlsx</code> no mesmo formato do backup.
+      Registros com nomes já existentes são ignorados automaticamente.
+    </p>
+    <div style="background:var(--bg-muted,#f8f9fa); border-radius:6px; padding:10px 14px; font-size:var(--font-size-xs); color:var(--text-secondary); margin-bottom:16px; line-height:1.5;">
+      Vendas, compras e lotes <strong>não são reimportados</strong> — eles ficam no Excel apenas para consulta histórica.
+    </div>
+
+    <form method="POST" action="/configuracoes/importar" enctype="multipart/form-data">
+      <div class="form-group">
+        <label>Arquivo .xlsx</label>
+        <input type="file" name="file" accept=".xlsx,.xls" required style="width:100%;">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;">⬆ Importar</button>
+    </form>
+  </div>
+
+  <!-- ═══ ZERAR ═══ -->
+  <div class="form-card" style="margin:0; border:2px solid var(--color-danger,#ef4444)20;">
+    <h2 style="font-size:1rem; margin:0 0 4px; color:var(--color-danger,#ef4444);">🗑 Zerar Dados</h2>
+    <p style="font-size:var(--font-size-sm); color:var(--text-secondary); margin:0 0 20px;">
+      Remove permanentemente os dados selecionados. <strong>Esta ação não pode ser desfeita.</strong>
+      Faça um backup antes de prosseguir.
+    </p>
+
+    <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+      <label class="check-row danger-check"><input type="checkbox" id="z_vendas" name="z_vendas"> Vendas (e movimentos de estoque de vendas)</label>
+      <label class="check-row danger-check"><input type="checkbox" id="z_compras" name="z_compras"> Compras (e movimentos de estoque de compras)</label>
+      <label class="check-row danger-check"><input type="checkbox" id="z_lotes" name="z_lotes"> Lotes de Produção (e movimentos relacionados)</label>
+      <label class="check-row danger-check"><input type="checkbox" id="z_movimentos" name="z_movimentos"> Todos os movimentos de estoque restantes</label>
+      <label class="check-row danger-check"><input type="checkbox" id="z_clientes" name="z_clientes"> Clientes <span style="font-size:0.75em;color:var(--text-secondary);">(requer Vendas zeradas)</span></label>
+      <label class="check-row danger-check"><input type="checkbox" id="z_produtos" name="z_produtos"> Produtos <span style="font-size:0.75em;color:var(--text-secondary);">(requer Vendas + Compras zeradas)</span></label>
+    </div>
+
+    <button type="button" class="btn btn-danger" style="width:100%;" onclick="openResetModal()">
+      Continuar com Zeramento →
+    </button>
+  </div>
+
+</div>
+
+<!-- ═══ RESET CONFIRM MODAL ═══ -->
+<div id="resetModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:var(--bg-surface,#fff); border-radius:12px; padding:32px; max-width:460px; width:92%; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <h3 style="margin:0 0 8px; color:var(--color-danger,#ef4444);">Confirmar Zeramento</h3>
+    <p style="margin:0 0 16px; font-size:var(--font-size-sm); color:var(--text-secondary);">
+      Você está prestes a deletar permanentemente os seguintes dados:
+    </p>
+    <ul id="resetSummary" style="font-size:var(--font-size-sm); margin:0 0 20px; padding-left:18px; line-height:1.8;"></ul>
+
+    <form id="resetForm" method="POST" action="/configuracoes/zerar">
+      <!-- categories injected by JS -->
+      <div class="form-group">
+        <label style="color:var(--color-danger,#ef4444); font-weight:600;">
+          Digite <code>CONFIRMAR</code> para prosseguir:
+        </label>
+        <input type="text" name="confirm" id="resetConfirmInput"
+          placeholder="CONFIRMAR" autocomplete="off"
+          style="font-family:monospace; letter-spacing:.05em;">
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px;">
+        <button type="button" class="btn btn-light" onclick="closeResetModal()">← Cancelar</button>
+        <button type="submit" class="btn btn-danger" id="resetSubmitBtn" disabled>Zerar Agora</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  padding: 8px 10px;
+  border-radius: 6px;
+  transition: background .12s;
+}
+.check-row:hover { background: var(--bg-muted, #f8f9fa); }
+.check-row input[type="checkbox"] { width: auto; margin: 0; cursor: pointer; }
+.danger-check:hover { background: #fff1f1; }
+</style>
+
+<script>
+var RESET_LABELS = {
+  z_vendas:     'Vendas (itens, pagamentos, movimentos de venda)',
+  z_compras:    'Compras (itens, movimentos de compra)',
+  z_lotes:      'Lotes de Produção (movimentos de produção)',
+  z_movimentos: 'Todos os movimentos de estoque restantes',
+  z_clientes:   'Clientes (e ledger de retornáveis)',
+  z_produtos:   'Produtos (e todos os dados vinculados)'
+};
+
+function openResetModal() {
+  var checked = [];
+  Object.keys(RESET_LABELS).forEach(function(id) {
+    if (document.getElementById(id) && document.getElementById(id).checked) {
+      checked.push(id);
+    }
+  });
+
+  if (checked.length === 0) {
+    alert('Selecione ao menos uma categoria para zerar.');
+    return;
+  }
+
+  // Build summary list
+  var ul = document.getElementById('resetSummary');
+  ul.innerHTML = '';
+  checked.forEach(function(id) {
+    var li = document.createElement('li');
+    li.textContent = RESET_LABELS[id];
+    li.style.color = 'var(--color-danger, #ef4444)';
+    ul.appendChild(li);
+  });
+
+  // Inject hidden inputs into form (remove previous ones first)
+  var form = document.getElementById('resetForm');
+  form.querySelectorAll('input[name="categories"]').forEach(function(el) { el.remove(); });
+  checked.forEach(function(id) {
+    var key = id.replace('z_', '');
+    var inp = document.createElement('input');
+    inp.type = 'hidden'; inp.name = 'categories'; inp.value = key;
+    form.appendChild(inp);
+  });
+
+  document.getElementById('resetConfirmInput').value = '';
+  document.getElementById('resetSubmitBtn').disabled = true;
+  document.getElementById('resetModal').style.display = 'flex';
+}
+
+function closeResetModal() {
+  document.getElementById('resetModal').style.display = 'none';
+}
+
+document.getElementById('resetConfirmInput').addEventListener('input', function() {
+  document.getElementById('resetSubmitBtn').disabled = (this.value !== 'CONFIRMAR');
+});
+
+document.getElementById('resetModal').addEventListener('click', function(e) {
+  if (e.target === this) closeResetModal();
+});
+</script>

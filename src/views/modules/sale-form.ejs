@@ -170,12 +170,12 @@
 </style>
 
 <!-- Product data: JSON, no EJS inside script blocks -->
-<script id="product-data" type="application/json"><%- JSON.stringify(products.map(function(p){ return { id: p.id, price: p.priceUnit, returnable: p.isReturnable, depositValue: p.depositValue || 5 }; })) %></script>
+<script id="product-data" type="application/json"><%- JSON.stringify(products.map(function(p){ return { id: p.id, price: p.priceUnit, returnable: p.isReturnable, depositValue: p.depositValue || 5, stock: stockMap[p.id] !== undefined ? stockMap[p.id] : 0 }; })) %></script>
 
 <script>
 var PRODUCT_DATA = {};
 JSON.parse(document.getElementById('product-data').textContent).forEach(function(p) {
-  PRODUCT_DATA[p.id] = { price: p.price, returnable: p.returnable, depositValue: p.depositValue || 5 };
+  PRODUCT_DATA[p.id] = { price: p.price, returnable: p.returnable, depositValue: p.depositValue || 5, stock: p.stock };
 });
 
 // Add item row
@@ -205,6 +205,13 @@ function attachRowEvents(row) {
 
     if (pid && PRODUCT_DATA[pid]) {
       priceInput.value = parseFloat(PRODUCT_DATA[pid].price).toFixed(2);
+      var qtyInput = row.querySelector('.qty-input');
+      var stock = PRODUCT_DATA[pid].stock;
+      qtyInput.max = stock;
+      if (qtyInput.value && parseInt(qtyInput.value, 10) > stock) {
+        qtyInput.value = stock > 0 ? stock : 0;
+        showStockTooltip(qtyInput, stock);
+      }
       if (PRODUCT_DATA[pid].returnable) {
         depositCell.style.display = 'table-cell';
         depositCheck.checked = true;
@@ -223,7 +230,18 @@ function attachRowEvents(row) {
     updateTotals();
   });
 
-  row.querySelector('.qty-input').addEventListener('input', updateTotals);
+  row.querySelector('.qty-input').addEventListener('input', function() {
+    var pid = row.querySelector('.product-select').value;
+    if (pid && PRODUCT_DATA[pid]) {
+      var stock = PRODUCT_DATA[pid].stock;
+      var val   = parseInt(this.value, 10) || 0;
+      if (val > stock) {
+        this.value = stock > 0 ? stock : 0;
+        showStockTooltip(this, stock);
+      }
+    }
+    updateTotals();
+  });
 
   row.querySelector('.deposit-check').addEventListener('change', function() {
     row.querySelector('.deposit-hidden').value = this.checked ? '1' : '0';
@@ -268,6 +286,49 @@ document.getElementById('cardFeeRate').addEventListener('input', updateTotals);
 function getCardFeeType() {
   var checked = document.querySelector('input[name="cardFeeType"]:checked');
   return checked ? checked.value : 'PCT';
+}
+
+// Stock tooltip balloon
+var _tooltipEl = null;
+var _tooltipTimer = null;
+
+function showStockTooltip(inputEl, stock) {
+  if (_tooltipEl) {
+    clearTimeout(_tooltipTimer);
+    _tooltipEl.remove();
+  }
+
+  var tip = document.createElement('div');
+  tip.textContent = stock <= 0
+    ? 'Sem estoque disponível'
+    : 'Estoque disponível: ' + stock + ' unidade' + (stock === 1 ? '' : 's');
+
+  var rect = inputEl.getBoundingClientRect();
+  tip.style.cssText =
+    'position:fixed;z-index:9999;' +
+    'background:#1e293b;color:#fff;' +
+    'font-size:12px;font-weight:500;line-height:1.4;' +
+    'padding:6px 10px;border-radius:6px;white-space:nowrap;' +
+    'pointer-events:none;' +
+    'left:' + (rect.left + rect.width / 2) + 'px;' +
+    'top:' + (rect.top + window.scrollY - 36) + 'px;' +
+    'transform:translateX(-50%);' +
+    'box-shadow:0 2px 8px rgba(0,0,0,.25);';
+
+  // Arrow
+  var arrow = document.createElement('div');
+  arrow.style.cssText =
+    'position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);' +
+    'width:0;height:0;border-left:5px solid transparent;' +
+    'border-right:5px solid transparent;border-top:5px solid #1e293b;';
+  tip.appendChild(arrow);
+
+  document.body.appendChild(tip);
+  _tooltipEl = tip;
+
+  _tooltipTimer = setTimeout(function() {
+    if (_tooltipEl) { _tooltipEl.remove(); _tooltipEl = null; }
+  }, 3000);
 }
 
 function updateTotals() {

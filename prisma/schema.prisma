@@ -15,6 +15,7 @@ model Product {
   id           Int     @id @default(autoincrement())
   name         String  @unique
   type         String  // "SACOLÉ" or "DRINK"
+  origin       String  @default("PRODUZIDO") // "PRODUZIDO" or "COMPRADO"
   isReturnable Boolean @default(false)
   depositValue Float   @default(5) // Valor do depósito por unidade retornável (BRL)
   costUnit     Float   // Custo unitário em BRL

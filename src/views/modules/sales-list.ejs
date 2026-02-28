@@ -32,8 +32,9 @@
 <% if (sales && sales.length > 0) { %>
   <!-- Summary Row -->
   <%
-    var totalRevenue = sales.reduce(function(s, v) { return s + v.finalTotalBrl; }, 0);
-    var totalSales = sales.length;
+    var finalizadas = sales.filter(function(v) { return v.status === 'FINALIZADA'; });
+    var totalRevenue = finalizadas.reduce(function(s, v) { return s + v.finalTotalBrl; }, 0);
+    var totalSales = finalizadas.length;
   %>
   <div class="dashboard-grid" style="margin-bottom: var(--spacing-xl);">
     <div class="stat-card">
@@ -46,7 +47,7 @@
     </div>
     <div class="stat-card">
       <div class="stat-label">Ticket Médio</div>
-      <div class="stat-value">R$ <%= (totalRevenue / totalSales).toFixed(2) %></div>
+      <div class="stat-value">R$ <%= (totalSales > 0 ? totalRevenue / totalSales : 0).toFixed(2) %></div>
     </div>
   </div>
 
@@ -60,6 +61,7 @@
           <th>Pagamento</th>
           <th class="text-right">Total</th>
           <th>Status</th>
+          <th style="width:90px;"></th>
         </tr>
       </thead>
       <tbody>
@@ -100,7 +102,19 @@
             <% } %>
           </td>
           <td>
-            <span class="badge badge-success">Finalizada</span>
+            <% if (v.status === 'CANCELADA') { %>
+              <span class="badge badge-danger">Cancelada</span>
+            <% } else { %>
+              <span class="badge badge-success">Finalizada</span>
+            <% } %>
+          </td>
+          <td>
+            <% if (v.status === 'FINALIZADA') { %>
+              <button type="button" class="btn btn-sm btn-secondary"
+                onclick="openCancelModal(<%= v.id %>)">
+                ↩ Desfazer
+              </button>
+            <% } %>
           </td>
         </tr>
         <% }); %>
@@ -116,7 +130,58 @@
   </div>
 <% } %>
 
+<!-- Cancel Sale Modal -->
+<div id="cancelModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:var(--bg-surface, #fff); border-radius:12px; padding:32px; max-width:460px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.25);">
+    <h3 style="margin:0 0 8px; font-size:1.15rem;">Desfazer Venda</h3>
+    <p style="margin:0 0 20px; color:var(--text-secondary);">
+      O produto foi devolvido pelo cliente?
+    </p>
+
+    <div style="background:var(--bg-muted, #f8f9fa); border-radius:8px; padding:16px; margin-bottom:24px; font-size:var(--font-size-sm);">
+      <div style="margin-bottom:10px;">
+        <strong>Sim, devolveu</strong> — produto volta ao estoque, a venda é cancelada por completo.
+      </div>
+      <div>
+        <strong>Não devolveu</strong> — o custo de produção existiu mas o lucro não; a receita é cancelada e o estoque <em>não</em> é restaurado.
+      </div>
+    </div>
+
+    <form id="cancelForm" method="POST" action="">
+      <input type="hidden" name="productReturned" id="productReturnedInput" value="1">
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button type="button" onclick="closeCancelModal()" class="btn btn-secondary" style="flex:1; min-width:100px;">
+          ← Voltar
+        </button>
+        <button type="submit" class="btn btn-warning" style="flex:1; min-width:130px;"
+          onclick="document.getElementById('productReturnedInput').value='0'">
+          Não devolveu
+        </button>
+        <button type="submit" class="btn btn-primary" style="flex:1; min-width:130px;"
+          onclick="document.getElementById('productReturnedInput').value='1'">
+          Sim, devolveu
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
+function openCancelModal(saleId) {
+  document.getElementById('cancelForm').action = '/vendas/' + saleId + '/cancelar';
+  var modal = document.getElementById('cancelModal');
+  modal.style.display = 'flex';
+}
+
+function closeCancelModal() {
+  document.getElementById('cancelModal').style.display = 'none';
+}
+
+// Close on backdrop click
+document.getElementById('cancelModal').addEventListener('click', function(e) {
+  if (e.target === this) closeCancelModal();
+});
+
 function applyFilter() {
   var start = document.getElementById('filterStartDate').value;
   var end = document.getElementById('filterEndDate').value;

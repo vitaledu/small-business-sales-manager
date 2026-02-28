@@ -96,6 +96,7 @@ export class CrudController {
       await ProductRepository.create({
         name,
         type,
+        origin: req.body.origin || 'PRODUZIDO',
         costUnit: parseFloat(costUnit),
         priceUnit: parseFloat(priceUnit),
         isReturnable: returnable,
@@ -136,6 +137,7 @@ export class CrudController {
       await ProductRepository.update(parseInt(req.params.id), {
         name: req.body.name,
         type: req.body.type,
+        origin: req.body.origin || 'PRODUZIDO',
         costUnit: parseFloat(req.body.costUnit),
         priceUnit: parseFloat(req.body.priceUnit),
         isReturnable: returnable,
@@ -283,6 +285,13 @@ export class CrudController {
   static async purchasesList(req: Request, res: Response) {
     try {
       const purchases = await PurchaseRepository.findAll();
+      // For RECEIVED purchases, attach already-reversed quantities so the template
+      // can compute remaining reversible qty per item.
+      for (const p of purchases as any[]) {
+        if (p.status === 'RECEIVED') {
+          p.reversedQuantities = await PurchaseRepository.getReversedQuantities(p.id);
+        }
+      }
       const body = await renderLayout(res, 'modules/purchases-list', { purchases });
       res.render('layout/main', { title: 'Compras', body });
     } catch (error: any) {
@@ -293,7 +302,8 @@ export class CrudController {
 
   static async purchasesNewForm(req: Request, res: Response) {
     try {
-      const products = await ProductRepository.findAll('ATIVO');
+      const allProducts = await ProductRepository.findAll('ATIVO');
+      const products = allProducts.filter((p: any) => p.origin === 'COMPRADO');
       const body = await renderLayout(res, 'modules/purchase-form', { purchase: null, products });
       res.render('layout/main', { title: 'Nova Compra', body });
     } catch (error: any) {
@@ -360,11 +370,41 @@ export class CrudController {
     }
   }
 
+  static async purchasesCancel(req: Request, res: Response) {
+    try {
+      await PurchaseRepository.cancelDraft(parseInt(req.params.id));
+      res.redirect('/compras');
+    } catch (error: any) {
+      const body = `<div class="alert alert-error">Erro ao cancelar compra: ${error.message}</div>`;
+      res.status(400).render('layout/main', { title: 'Compras', body });
+    }
+  }
+
+  static async purchasesReverse(req: Request, res: Response) {
+    try {
+      const id = parseInt(req.params.id);
+      const productIds: string[] = [].concat(req.body.productIds).filter(Boolean);
+      const quantities: string[]  = [].concat(req.body.quantities);
+
+      const reversals = productIds.map((pid: string, idx: number) => ({
+        productId: parseInt(pid),
+        quantity: Math.floor(Math.abs(parseFloat(quantities[idx]) || 0)),
+      })).filter(r => r.quantity > 0);
+
+      await PurchaseRepository.reverseReceiving(id, reversals);
+      res.redirect('/compras');
+    } catch (error: any) {
+      const body = `<div class="alert alert-error">Erro ao estornar compra: ${error.message}</div>`;
+      res.status(400).render('layout/main', { title: 'Compras', body });
+    }
+  }
+
   // ========== PRODUCTION BATCHES ==========
   static async batchesList(req: Request, res: Response) {
     try {
       const batches = await ProductionBatchRepository.findAll();
-      const products = await ProductRepository.findAll('ATIVO');
+      const allProducts = await ProductRepository.findAll('ATIVO');
+      const products = allProducts.filter((p: any) => p.origin === 'PRODUZIDO');
       const body = await renderLayout(res, 'modules/batches-list', { batches, products });
       res.render('layout/main', { title: 'Lotes de Produção', body });
     } catch (error: any) {
@@ -470,11 +510,13 @@ export class CrudController {
   static async salesNew(req: Request, res: Response) {
     try {
       const customers = await CustomerRepository.findAll('ATIVO');
-      const products = await ProductRepository.findAll('ATIVO');
-      const success = req.query.success === 'true';
+      const products  = await ProductRepository.findAll('ATIVO');
+      const stockMap  = await ProductRepository.getStockMap(products.map((p: any) => p.id));
+      const success   = req.query.success === 'true';
       const body = await renderLayout(res, 'modules/sale-form', {
         customers,
         products,
+        stockMap,
         success,
         depositValue: config.returnableDepositValue
       });
@@ -536,7 +578,19 @@ export class CrudController {
 
       const finalTotalBrl = afterDiscount + cardFeeValue + returnableDepositCharged;
 
-      await SaleRepository.create({
+      // Validate stock before committing the sale — prevent negative inventory
+      for (const item of items) {
+        const currentStock = await ProductRepository.getStock(item.productId);
+        if (item.quantity > currentStock) {
+          const product = await ProductRepository.findById(item.productId);
+          const name = product?.name || `produto ${item.productId}`;
+          throw new Error(
+            `Estoque insuficiente para "${name}": disponível ${currentStock}, solicitado ${item.quantity}`
+          );
+        }
+      }
+
+      const sale = await SaleRepository.create({
         customerId: parseInt(customerId),
         items,
         totalBrl,
@@ -550,6 +604,11 @@ export class CrudController {
           amountBrl: finalTotalBrl
         }]
       });
+
+      // Record inventory OUT for each item sold
+      for (const item of items) {
+        await SaleRepository.recordInventoryChange(item.productId, item.quantity, 'VENDA', sale.id);
+      }
 
       // Record returnable bottle movement only for items with deposit enabled
       for (let i = 0; i < productIds.length; i++) {
@@ -571,6 +630,39 @@ export class CrudController {
         title: 'Nova Venda',
         body: `<div class="alert alert-error">Erro: ${error.message}</div>`
       });
+    }
+  }
+
+  static async salesCancel(req: Request, res: Response) {
+    try {
+      const saleId = parseInt(req.params.id);
+      const sale = await SaleRepository.findById(saleId);
+      if (!sale) throw new Error('Venda não encontrada');
+      if (sale.status !== 'FINALIZADA') throw new Error('Apenas vendas finalizadas podem ser canceladas');
+
+      // productReturned=1 → restore inventory; productReturned=0 → keep stock as-is (product was consumed)
+      const productReturned = req.body.productReturned !== '0';
+
+      if (productReturned) {
+        for (const item of sale.items) {
+          await SaleRepository.restoreInventory(item.productId, item.quantity, saleId);
+        }
+      }
+
+      // Reverse returnable ledger if deposit was charged (only if product came back)
+      if (productReturned && sale.returnableDepositCharged > 0) {
+        for (const item of sale.items) {
+          if (item.product && item.product.isReturnable) {
+            await ReturnableRepository.recordReturn(sale.customerId, item.productId, item.quantity);
+          }
+        }
+      }
+
+      await SaleRepository.cancel(saleId);
+      res.redirect('/vendas');
+    } catch (error: any) {
+      const body = `<div class="alert alert-error">Erro ao cancelar venda: ${error.message}</div>`;
+      res.status(400).render('layout/main', { title: 'Vendas', body });
     }
   }
 

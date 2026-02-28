@@ -28,6 +28,11 @@
           <td>
             <strong><%= p.name %></strong>
             <div style="font-size: var(--font-size-xs); color: var(--text-secondary); margin-top: var(--spacing-xs);">
+              <% if (p.origin === 'COMPRADO') { %>
+                <span class="badge badge-neutral">🛒 Comprado</span>
+              <% } else { %>
+                <span class="badge badge-primary">🏭 Produzido</span>
+              <% } %>
               <% if (p.isReturnable) { %>
                 <span class="badge badge-primary">🔄 Retornável · dep. R$ <%= (p.depositValue || 5).toFixed(2) %></span>
               <% } %>

@@ -13,22 +13,49 @@
         <tr>
           <th>Data</th>
           <th>Fornecedor</th>
-          <th class="text-right">Itens</th>
+          <th>Itens</th>
           <th class="text-right">Total</th>
           <th>Status</th>
           <th>Ações</th>
         </tr>
       </thead>
       <tbody>
-        <% purchases.forEach(p => { %>
+        <% purchases.forEach(function(p) { %>
+        <%
+          var reversedQtys = p.reversedQuantities || {};
+          // Build item summary with remaining qty for RECEIVED purchases
+          var itemsSummary = (p.items || []).map(function(i) {
+            var revQty = reversedQtys[i.productId] || 0;
+            return {
+              productId: i.productId,
+              productName: i.product ? i.product.name : 'Produto',
+              originalQty: i.quantity,
+              reversedQty: revQty,
+              remaining: i.quantity - revQty
+            };
+          });
+          var hasRemaining = itemsSummary.some(function(i) { return i.remaining > 0; });
+        %>
         <tr>
           <td><%= new Date(p.date).toLocaleDateString('pt-BR') %></td>
           <td><%= p.supplierName || 'Fornecedor não informado' %></td>
-          <td class="text-right"><%= p.items ? p.items.length : 0 %> item(s)</td>
-          <td class="currency text-right">R$ <%= (p.totalCostBrl).toFixed(2) %></td>
+          <td style="font-size: var(--font-size-xs); color: var(--text-secondary);">
+            <% itemsSummary.slice(0, 2).forEach(function(it) { %>
+              <div>
+                <%= it.originalQty %>x <%= it.productName %>
+                <% if (it.reversedQty > 0) { %>
+                  <span style="color:var(--color-warning,#f59e0b);">(devolvido: <%= it.reversedQty %>)</span>
+                <% } %>
+              </div>
+            <% }); %>
+            <% if (itemsSummary.length > 2) { %><div>+ <%= itemsSummary.length - 2 %> mais</div><% } %>
+          </td>
+          <td class="currency text-right">R$ <%= p.totalCostBrl.toFixed(2) %></td>
           <td>
             <% if (p.status === 'RECEIVED') { %>
               <span class="badge badge-success">Recebido</span>
+            <% } else if (p.status === 'CANCELLED') { %>
+              <span class="badge badge-danger">Cancelado</span>
             <% } else { %>
               <span class="badge badge-warning">Pendente</span>
             <% } %>
@@ -39,10 +66,20 @@
                 <form method="POST" action="/compras/<%= p.id %>/finalizar" style="display:inline;">
                   <button type="submit" class="btn btn-sm btn-success">Receber</button>
                 </form>
+                <form method="POST" action="/compras/<%= p.id %>/cancelar" style="display:inline;">
+                  <button type="submit" class="btn btn-sm btn-danger"
+                    onclick="return confirm('Cancelar esta compra pendente? Ela será removida.')">
+                    Cancelar
+                  </button>
+                </form>
+              <% } else if (p.status === 'RECEIVED' && hasRemaining) { %>
+                <button type="button" class="btn btn-sm btn-warning reverse-btn"
+                  data-id="<%= p.id %>"
+                  data-supplier="<%= encodeURIComponent(p.supplierName || 'Fornecedor') %>"
+                  data-items="<%= encodeURIComponent(JSON.stringify(itemsSummary)) %>">
+                  Estornar
+                </button>
               <% } %>
-              <form method="POST" action="/compras/<%= p.id %>/deletar" style="display:inline;">
-                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Deletar esta compra?')">Deletar</button>
-              </form>
             </div>
           </td>
         </tr>
@@ -58,3 +95,150 @@
     <a href="/compras/nova" class="btn btn-primary" style="margin-top: var(--spacing-lg);">+ Nova Compra</a>
   </div>
 <% } %>
+
+<!-- ======= ESTORNO MODAL ======= -->
+<div id="reverseModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:var(--bg-surface,#fff); border-radius:12px; padding:28px 32px; max-width:520px; width:92%; box-shadow:0 20px 60px rgba(0,0,0,0.25); max-height:90vh; overflow-y:auto;">
+
+    <!-- Etapa 1: escolher tipo -->
+    <div id="reverseStep1">
+      <h3 style="margin:0 0 4px; font-size:1.1rem;">Estornar Recebimento</h3>
+      <p id="reverseSupplierLabel" style="margin:0 0 20px; color:var(--text-secondary); font-size:var(--font-size-sm);"></p>
+
+      <!-- Card Total -->
+      <div role="button" tabindex="0" onclick="chooseType('total')"
+        style="border:2px solid var(--border-color,#e2e8f0); border-radius:8px; padding:16px 18px;
+               margin-bottom:12px; cursor:pointer; transition:border-color .15s, background .15s;"
+        onmouseover="this.style.borderColor='var(--color-warning,#f59e0b)'; this.style.background='var(--bg-muted,#fafafa)'"
+        onmouseout="this.style.borderColor='var(--border-color,#e2e8f0)'; this.style.background=''">
+        <div style="font-weight:600; margin-bottom:6px;">Estorno Total</div>
+        <div style="font-size:var(--font-size-sm); color:var(--text-secondary); line-height:1.5;">
+          Devolver <strong>todos</strong> os itens disponíveis ao fornecedor. O estoque retorna ao estado antes do recebimento.
+        </div>
+      </div>
+
+      <!-- Card Parcial -->
+      <div role="button" tabindex="0" onclick="chooseType('partial')"
+        style="border:2px solid var(--border-color,#e2e8f0); border-radius:8px; padding:16px 18px;
+               margin-bottom:20px; cursor:pointer; transition:border-color .15s, background .15s;"
+        onmouseover="this.style.borderColor='var(--color-warning,#f59e0b)'; this.style.background='var(--bg-muted,#fafafa)'"
+        onmouseout="this.style.borderColor='var(--border-color,#e2e8f0)'; this.style.background=''">
+        <div style="font-weight:600; margin-bottom:6px;">Estorno Parcial</div>
+        <div style="font-size:var(--font-size-sm); color:var(--text-secondary); line-height:1.5;">
+          Devolver apenas <strong>parte</strong> dos itens. Informe a quantidade inteira a estornar por produto.
+        </div>
+      </div>
+
+      <div style="text-align:right;">
+        <button type="button" class="btn btn-light" onclick="closeReverseModal()">← Fechar</button>
+      </div>
+    </div>
+
+    <!-- Etapa 2: preencher quantidades -->
+    <div id="reverseStep2" style="display:none;">
+      <h3 style="margin:0 0 4px; font-size:1.1rem;" id="reverseStep2Title"></h3>
+      <p id="reverseStep2Supplier" style="margin:0 0 20px; color:var(--text-secondary); font-size:var(--font-size-sm);"></p>
+
+      <form id="reverseForm" method="POST" action="">
+        <table style="width:100%; border-collapse:collapse; margin-bottom:16px; font-size:var(--font-size-sm);">
+          <thead>
+            <tr style="color:var(--text-secondary); border-bottom:2px solid var(--border-color,#e2e8f0);">
+              <th style="text-align:left; padding:6px 8px;">Produto</th>
+              <th style="text-align:center; padding:6px 8px;">Disponível</th>
+              <th style="text-align:center; padding:6px 8px; width:110px;">Estornar</th>
+            </tr>
+          </thead>
+          <tbody id="reverseItemsBody"></tbody>
+        </table>
+
+        <div style="background:var(--bg-muted,#f8f9fa); border-radius:6px; padding:10px 14px;
+                    font-size:var(--font-size-xs); color:var(--text-secondary); margin-bottom:20px; line-height:1.5;">
+          Será registrado um movimento de <strong>saída</strong> com motivo <em>ESTORNO_COMPRA</em>.
+          O custo unitário do produto <strong>não é alterado</strong> pelo estorno.
+        </div>
+
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button type="button" class="btn btn-light" onclick="goBackToStep1()">← Voltar</button>
+          <button type="submit" class="btn btn-warning">Confirmar Estorno</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<script>
+var _reverseItems = [];
+var _reverseSupplier = '';
+
+document.querySelectorAll('.reverse-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    _reverseSupplier = decodeURIComponent(btn.getAttribute('data-supplier'));
+    _reverseItems    = JSON.parse(decodeURIComponent(btn.getAttribute('data-items')));
+
+    document.getElementById('reverseForm').action = '/compras/' + btn.getAttribute('data-id') + '/estornar';
+    document.getElementById('reverseSupplierLabel').textContent = 'Fornecedor: ' + _reverseSupplier;
+
+    // Reset to step 1
+    document.getElementById('reverseStep1').style.display = 'block';
+    document.getElementById('reverseStep2').style.display = 'none';
+    document.getElementById('reverseModal').style.display = 'flex';
+  });
+});
+
+function chooseType(type) {
+  var isTotal = (type === 'total');
+  document.getElementById('reverseStep2Title').textContent = isTotal ? 'Estorno Total' : 'Estorno Parcial';
+  document.getElementById('reverseStep2Supplier').textContent = 'Fornecedor: ' + _reverseSupplier;
+
+  var tbody = document.getElementById('reverseItemsBody');
+  tbody.innerHTML = '';
+
+  // Only show items that still have remaining qty to reverse
+  var reversibleItems = _reverseItems.filter(function(i) { return i.remaining > 0; });
+
+  reversibleItems.forEach(function(item) {
+    var qty = isTotal ? item.remaining : 0;
+    var tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid var(--border-color,#e2e8f0)';
+
+    var inputStyle = isTotal
+      ? 'width:70px;text-align:center;background:var(--bg-muted,#f8f9fa);'
+      : 'width:70px;text-align:center;';
+
+    tr.innerHTML =
+      '<td style="padding:10px 8px;">' + escapeHtml(item.productName) + '</td>' +
+      '<td style="text-align:center; padding:10px 8px;">' + item.remaining + '</td>' +
+      '<td style="text-align:center; padding:10px 8px;">' +
+        '<input type="hidden" name="productIds" value="' + item.productId + '">' +
+        '<input type="number" name="quantities"' +
+          ' min="0" max="' + item.remaining + '" step="1" value="' + qty + '"' +
+          (isTotal ? ' readonly' : '') +
+          ' style="' + inputStyle + '">' +
+      '</td>';
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('reverseStep1').style.display = 'none';
+  document.getElementById('reverseStep2').style.display = 'block';
+}
+
+function goBackToStep1() {
+  document.getElementById('reverseStep1').style.display = 'block';
+  document.getElementById('reverseStep2').style.display = 'none';
+}
+
+function closeReverseModal() {
+  document.getElementById('reverseModal').style.display = 'none';
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('reverseModal').addEventListener('click', function(e) {
+  if (e.target === this) closeReverseModal();
+});
+</script>
