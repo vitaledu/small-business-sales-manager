@@ -94,6 +94,11 @@ export class ProductionBatchRepository {
   }
 
   static async delete(id: number) {
+    // Se o lote foi concluído, remove também a movimentação de estoque gerada por ele
+    await prisma.inventoryMovement.deleteMany({
+      where: { referenceId: `BATCH_${id}`, referenceType: 'BATCH' }
+    });
+
     return prisma.productionBatch.delete({
       where: { id }
     });
