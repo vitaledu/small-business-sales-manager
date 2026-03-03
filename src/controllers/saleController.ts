@@ -3,6 +3,12 @@ import { SaleService } from '@/services/saleService';
 import { SaleRepository } from '@/repositories/saleRepository';
 import { validateRequest, CreateSaleSchema } from '@/utils/validator';
 
+const parseLocalDate = (value: string, endOfDay: boolean = false): Date => {
+  const [year, month, day] = value.split('-').map(Number);
+  if (endOfDay) return new Date(year, month - 1, day, 23, 59, 59, 999);
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+};
+
 export class SaleController {
   static async create(req: Request, res: Response) {
     try {
@@ -72,8 +78,8 @@ export class SaleController {
       }
 
       const sales = await SaleRepository.findByDateRange(
-        new Date(startDate as string),
-        new Date(endDate as string)
+        parseLocalDate(startDate as string, false),
+        parseLocalDate(endDate as string, true)
       );
 
       res.json({

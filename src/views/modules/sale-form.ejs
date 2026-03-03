@@ -43,6 +43,7 @@
       <tbody id="sale-items">
         <tr class="item-row">
           <td>
+            <input type="text" class="product-search" placeholder="Buscar produto..." style="margin-bottom:6px;">
             <select name="productIds" class="product-select" required>
               <option value="">Selecione um produto...</option>
               <% products.forEach(p => { %>
@@ -196,6 +197,8 @@ document.getElementById('add-item').addEventListener('click', function() {
 });
 
 function attachRowEvents(row) {
+  setupProductSearch(row);
+
   row.querySelector('.product-select').addEventListener('change', function() {
     var pid = this.value;
     var priceInput    = row.querySelector('.price-input');
@@ -254,6 +257,47 @@ function attachRowEvents(row) {
       updateTotals();
     }
   });
+}
+
+function setupProductSearch(row) {
+  var searchInput = row.querySelector('.product-search');
+  var select = row.querySelector('.product-select');
+  if (!searchInput || !select) return;
+
+  if (!select.dataset.allOptions) {
+    var allOptions = Array.from(select.options).map(function(opt) {
+      return {
+        value: opt.value,
+        text: opt.textContent,
+        price: opt.getAttribute('data-price') || ''
+      };
+    });
+    select.dataset.allOptions = JSON.stringify(allOptions);
+  }
+
+  function renderOptions() {
+    var term = (searchInput.value || '').toLowerCase().trim();
+    var selectedValue = select.value;
+    var options = JSON.parse(select.dataset.allOptions || '[]');
+
+    select.innerHTML = '';
+    options.forEach(function(opt) {
+      if (!opt.value || !term || opt.text.toLowerCase().indexOf(term) !== -1) {
+        var optionEl = document.createElement('option');
+        optionEl.value = opt.value;
+        optionEl.textContent = opt.text;
+        if (opt.price) optionEl.setAttribute('data-price', opt.price);
+        select.appendChild(optionEl);
+      }
+    });
+
+    if (selectedValue) {
+      var stillExists = Array.from(select.options).some(function(opt) { return opt.value === selectedValue; });
+      select.value = stillExists ? selectedValue : '';
+    }
+  }
+
+  searchInput.addEventListener('input', renderOptions);
 }
 
 attachRowEvents(document.querySelector('.item-row'));

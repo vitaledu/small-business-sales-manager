@@ -8,12 +8,12 @@
 <div class="filter-bar">
   <div class="filter-group">
     <label for="filterStartDate">Data Inicial</label>
-    <input type="date" id="filterStartDate" name="startDate" value="<%= new Date().toISOString().split('T')[0] %>">
+    <input type="date" id="filterStartDate" name="startDate" value="<%= startDate %>">
   </div>
 
   <div class="filter-group">
     <label for="filterEndDate">Data Final</label>
-    <input type="date" id="filterEndDate" name="endDate" value="<%= new Date().toISOString().split('T')[0] %>">
+    <input type="date" id="filterEndDate" name="endDate" value="<%= endDate %>">
   </div>
 
   <div class="filter-group">
@@ -23,10 +23,10 @@
 
 <!-- Quick Filter Buttons -->
 <div class="quick-filters">
-  <button class="quick-filter-btn active" onclick="setQuickFilter('today')">📅 Hoje</button>
-  <button class="quick-filter-btn" onclick="setQuickFilter('yesterday')">⏪ Ontem</button>
-  <button class="quick-filter-btn" onclick="setQuickFilter('week')">📆 Esta Semana</button>
-  <button class="quick-filter-btn" onclick="setQuickFilter('month')">📞 Este Mês</button>
+  <button class="quick-filter-btn active" onclick="setQuickFilter('today', this)">📅 Hoje</button>
+  <button class="quick-filter-btn" onclick="setQuickFilter('yesterday', this)">⏪ Ontem</button>
+  <button class="quick-filter-btn" onclick="setQuickFilter('week', this)">📆 Esta Semana</button>
+  <button class="quick-filter-btn" onclick="setQuickFilter('month', this)">📞 Este Mês</button>
 </div>
 
 <!-- Reports Grid -->
@@ -108,14 +108,21 @@
 </section>
 
 <script>
-function setQuickFilter(period) {
+function formatLocalDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function setQuickFilter(period, button) {
   const today = new Date();
   let startDate = new Date(today);
   let endDate = new Date(today);
 
   // Update active button
   document.querySelectorAll('.quick-filter-btn').forEach(btn => btn.classList.remove('active'));
-  event.target.classList.add('active');
+  if (button) button.classList.add('active');
 
   if (period === 'today') {
     // Already set to today
@@ -129,8 +136,8 @@ function setQuickFilter(period) {
     startDate.setDate(1); // Start of month
   }
 
-  document.getElementById('filterStartDate').value = startDate.toISOString().split('T')[0];
-  document.getElementById('filterEndDate').value = endDate.toISOString().split('T')[0];
+  document.getElementById('filterStartDate').value = formatLocalDate(startDate);
+  document.getElementById('filterEndDate').value = formatLocalDate(endDate);
   applyDateFilter();
 }
 

@@ -10,6 +10,19 @@ import { ReturnableRepository } from '@/repositories/returnableRepository';
 import { ReportRepository } from '@/repositories/reportRepository';
 import { config } from '@/config';
 
+const parseLocalDate = (value: string, endOfDay: boolean = false): Date => {
+  const [year, month, day] = value.split('-').map(Number);
+  if (endOfDay) return new Date(year, month - 1, day, 23, 59, 59, 999);
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+};
+
+const formatLocalDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const renderLayout = async (res: Response, view: string, data: any): Promise<string> => {
   return new Promise((resolve, reject) => {
     const viewPath = path.join(process.cwd(), 'src', 'views', `${view}.ejs`);
@@ -32,9 +45,10 @@ export class CrudController {
       
       const sales = await SaleRepository.findByDateRange(today, tomorrow);
       const customers = await CustomerRepository.findAll('ATIVO');
+      const finalizedSales = sales.filter(sale => sale.status === 'FINALIZADA');
       
       let dailyRevenue = 0, dailyCost = 0;
-      sales.forEach(sale => {
+      finalizedSales.forEach(sale => {
         sale.items.forEach(item => {
           dailyRevenue += item.quantity * item.priceUnitBrl;
           dailyCost += item.quantity * item.product.costUnit;
@@ -85,7 +99,7 @@ export class CrudController {
     try {
       const { name, type, costUnit, priceUnit, isReturnable, depositValue } = req.body;
 
-      if (!name || !type || !costUnit || !priceUnit) {
+      if (!name || !type || !priceUnit) {
         return res.status(400).render('layout/main', {
           title: 'Novo Produto',
           body: '<div class="alert alert-error">Preencha todos os campos obrigatórios</div>'
@@ -97,7 +111,7 @@ export class CrudController {
         name,
         type,
         origin: req.body.origin || 'PRODUZIDO',
-        costUnit: parseFloat(costUnit),
+        costUnit: parseFloat(costUnit || '0'),
         priceUnit: parseFloat(priceUnit),
         isReturnable: returnable,
         depositValue: returnable ? parseFloat(depositValue || '5') : 0,
@@ -319,6 +333,7 @@ export class CrudController {
       const productIds: string[] = [].concat(req.body.productIds).filter(Boolean);
       const quantities: string[] = [].concat(req.body.quantities);
       const costs: string[]      = [].concat(req.body.costs);
+      const costMode: string = req.body.costMode === 'TOTAL' ? 'TOTAL' : 'UNIT';
 
       if (productIds.length === 0) {
         const products = await ProductRepository.findAll('ATIVO');
@@ -326,11 +341,19 @@ export class CrudController {
         return res.status(400).render('layout/main', { title: 'Nova Compra', body });
       }
 
-      const items = productIds.map((pid: string, idx: number) => ({
-        productId: parseInt(pid),
-        quantity: parseFloat(quantities[idx]),
-        costUnitBrl: parseFloat(costs[idx])
-      }));
+      const items = productIds.map((pid: string, idx: number) => {
+        const quantity = parseFloat(quantities[idx]);
+        const costInput = parseFloat(costs[idx]);
+        const costUnitBrl = costMode === 'TOTAL'
+          ? (quantity > 0 ? costInput / quantity : 0)
+          : costInput;
+
+        return {
+          productId: parseInt(pid),
+          quantity,
+          costUnitBrl,
+        };
+      });
 
       const totalCostBrl = items.reduce((sum: number, item: any) => sum + (item.quantity * item.costUnitBrl), 0);
 
@@ -425,20 +448,27 @@ export class CrudController {
 
   static async batchesCreate(req: Request, res: Response) {
     try {
-      const { description, date, totalCostBrl, quantityProduced } = req.body;
+      const { description, date, quantityProduced, costMode, costValue, totalCostBrl } = req.body;
       
-      if (!description || !date || !totalCostBrl || !quantityProduced) {
+      if (!description || !date || !quantityProduced || !(costValue || totalCostBrl)) {
         return res.status(400).render('layout/main', {
           title: 'Novo Lote',
           body: '<div class="alert alert-error">Preencha todos os campos obrigatórios</div>'
         });
       }
 
+      const quantity = parseInt(quantityProduced);
+      const parsedCostValue = parseFloat(costValue || totalCostBrl);
+      const normalizedCostMode = costMode === 'UNIT' ? 'UNIT' : 'TOTAL';
+      const computedTotalCost = normalizedCostMode === 'UNIT'
+        ? parsedCostValue * quantity
+        : parsedCostValue;
+
       await ProductionBatchRepository.create({
         description,
         date,
-        totalCostBrl: parseFloat(totalCostBrl),
-        quantityProduced: parseInt(quantityProduced)
+        totalCostBrl: computedTotalCost,
+        quantityProduced: quantity
       });
 
       res.redirect('/lotes');
@@ -483,9 +513,8 @@ export class CrudController {
       let dateEnd: Date;
 
       if (startDate && endDate) {
-        dateStart = new Date(startDate as string);
-        dateEnd = new Date(endDate as string);
-        dateEnd.setHours(23, 59, 59, 999);
+        dateStart = parseLocalDate(startDate as string, false);
+        dateEnd = parseLocalDate(endDate as string, true);
       } else {
         const today = new Date();
         dateStart = new Date(today);
@@ -497,8 +526,8 @@ export class CrudController {
       const sales = await SaleRepository.findByDateRange(dateStart, dateEnd);
       const body = await renderLayout(res, 'modules/sales-list', {
         sales,
-        startDate: dateStart.toISOString().split('T')[0],
-        endDate: dateEnd.toISOString().split('T')[0]
+        startDate: formatLocalDate(dateStart),
+        endDate: formatLocalDate(dateEnd)
       });
       res.render('layout/main', { title: 'Vendas', body });
     } catch (error: any) {
@@ -714,11 +743,8 @@ export class CrudController {
       let dateEnd: Date;
       
       if (startDate && endDate) {
-        // Parse provided dates
-        dateStart = new Date(startDate as string);
-        dateEnd = new Date(endDate as string);
-        // Ensure end date includes the entire day
-        dateEnd.setHours(23, 59, 59, 999);
+        dateStart = parseLocalDate(startDate as string, false);
+        dateEnd = parseLocalDate(endDate as string, true);
       } else {
         // Default to today
         const today = new Date();
@@ -734,8 +760,8 @@ export class CrudController {
       const body = await renderLayout(res, 'modules/reports', { 
         profit, 
         bestSellers,
-        startDate: dateStart.toISOString().split('T')[0],
-        endDate: dateEnd.toISOString().split('T')[0]
+        startDate: formatLocalDate(dateStart),
+        endDate: formatLocalDate(dateEnd)
       });
       res.render('layout/main', { title: 'Relatórios', body });
     } catch (error: any) {

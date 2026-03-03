@@ -190,6 +190,13 @@ function applyFilter() {
   }
 }
 
+function formatLocalDate(date) {
+  var year = date.getFullYear();
+  var month = String(date.getMonth() + 1).padStart(2, '0');
+  var day = String(date.getDate()).padStart(2, '0');
+  return year + '-' + month + '-' + day;
+}
+
 function setQuick(period) {
   var today = new Date();
   var start = new Date(today);
@@ -204,8 +211,8 @@ function setQuick(period) {
     start.setDate(1);
   }
 
-  document.getElementById('filterStartDate').value = start.toISOString().split('T')[0];
-  document.getElementById('filterEndDate').value = end.toISOString().split('T')[0];
+  document.getElementById('filterStartDate').value = formatLocalDate(start);
+  document.getElementById('filterEndDate').value = formatLocalDate(end);
   applyFilter();
 }
 

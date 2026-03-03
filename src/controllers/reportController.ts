@@ -2,6 +2,12 @@ import { Request, Response } from 'express';
 import { ReturnableRepository } from '@/repositories/returnableRepository';
 import { ReportRepository } from '@/repositories/reportRepository';
 
+const parseLocalDate = (value: string, endOfDay: boolean = false): Date => {
+  const [year, month, day] = value.split('-').map(Number);
+  if (endOfDay) return new Date(year, month - 1, day, 23, 59, 59, 999);
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+};
+
 export class ReportController {
   static async getProfitReport(req: Request, res: Response) {
     try {
@@ -16,8 +22,8 @@ export class ReportController {
       }
 
       const report = await ReportRepository.getProfitByDateRange(
-        new Date(startDate as string),
-        new Date(endDate as string)
+        parseLocalDate(startDate as string, false),
+        parseLocalDate(endDate as string, true)
       );
 
       res.json({
@@ -46,8 +52,8 @@ export class ReportController {
       }
 
       const data = await ReportRepository.getBestSellers(
-        new Date(startDate as string),
-        new Date(endDate as string),
+        parseLocalDate(startDate as string, false),
+        parseLocalDate(endDate as string, true),
         parseInt(limit as string)
       );
 

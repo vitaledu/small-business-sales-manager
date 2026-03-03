@@ -16,6 +16,14 @@
       <label>Fornecedor</label>
       <input type="text" name="supplierName" placeholder="Nome do fornecedor">
     </div>
+
+    <div class="form-group">
+      <label>Modo de Custo</label>
+      <select name="costMode" id="costMode">
+        <option value="UNIT">Custo unitário</option>
+        <option value="TOTAL" selected>Custo total do item</option>
+      </select>
+    </div>
   </div>
 
   <hr>
@@ -27,7 +35,7 @@
         <tr>
           <th>Produto</th>
           <th style="width:110px;">Quantidade</th>
-          <th style="width:150px;">Custo Unit. (R$)</th>
+          <th style="width:150px;" id="cost-header">Custo Unit. (R$)</th>
           <th style="width:130px;" class="text-right">Subtotal</th>
           <th style="width:50px;"></th>
         </tr>
@@ -35,6 +43,7 @@
       <tbody id="purchase-items">
         <tr class="item-row">
           <td>
+            <input type="text" class="product-search" placeholder="Buscar produto..." style="margin-bottom:6px;">
             <select name="productIds" required>
               <option value="">Selecione um produto...</option>
               <% products.forEach(p => { %>
@@ -82,11 +91,23 @@ document.getElementById('add-item').addEventListener('click', function() {
   tbody.appendChild(row);
 });
 
+function getCostMode() {
+  return document.getElementById('costMode').value;
+}
+
+function updateCostHeader() {
+  var header = document.getElementById('cost-header');
+  header.textContent = getCostMode() === 'TOTAL' ? 'Custo Total (R$)' : 'Custo Unit. (R$)';
+}
+
 function attachRow(row) {
+  setupProductSearch(row);
+
   function recalc() {
     var qty  = parseInt(row.querySelector('input[name="quantities"]').value, 10) || 0;
     var cost = parseFloat(row.querySelector('input[name="costs"]').value) || 0;
-    row.querySelector('.subtotal').textContent = (qty * cost).toFixed(2).replace('.', ',');
+    var subtotal = getCostMode() === 'TOTAL' ? cost : (qty * cost);
+    row.querySelector('.subtotal').textContent = subtotal.toFixed(2).replace('.', ',');
   }
   row.querySelector('input[name="quantities"]').addEventListener('input', recalc);
   row.querySelector('input[name="costs"]').addEventListener('input', recalc);
@@ -95,5 +116,51 @@ function attachRow(row) {
   });
 }
 
+function setupProductSearch(row) {
+  var searchInput = row.querySelector('.product-search');
+  var select = row.querySelector('select[name="productIds"]');
+  if (!searchInput || !select) return;
+
+  if (!select.dataset.allOptions) {
+    var allOptions = Array.from(select.options).map(function(opt) {
+      return { value: opt.value, text: opt.textContent };
+    });
+    select.dataset.allOptions = JSON.stringify(allOptions);
+  }
+
+  function renderOptions() {
+    var term = (searchInput.value || '').toLowerCase().trim();
+    var selectedValue = select.value;
+    var options = JSON.parse(select.dataset.allOptions || '[]');
+
+    select.innerHTML = '';
+    options.forEach(function(opt) {
+      if (!opt.value || !term || opt.text.toLowerCase().indexOf(term) !== -1) {
+        var optionEl = document.createElement('option');
+        optionEl.value = opt.value;
+        optionEl.textContent = opt.text;
+        select.appendChild(optionEl);
+      }
+    });
+
+    if (selectedValue) {
+      var stillExists = Array.from(select.options).some(function(opt) { return opt.value === selectedValue; });
+      select.value = stillExists ? selectedValue : '';
+    }
+  }
+
+  searchInput.addEventListener('input', renderOptions);
+}
+
 attachRow(document.querySelector('.item-row'));
+document.getElementById('costMode').addEventListener('change', function() {
+  updateCostHeader();
+  document.querySelectorAll('.item-row').forEach(function(row) {
+    var qty  = parseInt(row.querySelector('input[name="quantities"]').value, 10) || 0;
+    var cost = parseFloat(row.querySelector('input[name="costs"]').value) || 0;
+    var subtotal = getCostMode() === 'TOTAL' ? cost : (qty * cost);
+    row.querySelector('.subtotal').textContent = subtotal.toFixed(2).replace('.', ',');
+  });
+});
+updateCostHeader();
 </script>

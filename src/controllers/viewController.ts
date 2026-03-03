@@ -31,11 +31,12 @@ export class ViewController {
       tomorrow.setDate(tomorrow.getDate() + 1);
       
       const sales = await SaleRepository.findByDateRange(today, tomorrow);
+      const finalizedSales = sales.filter(sale => sale.status === 'FINALIZADA');
       
       let dailyRevenue = 0;
       let dailyCost = 0;
       
-      sales.forEach(sale => {
+      finalizedSales.forEach(sale => {
         sale.items.forEach(item => {
           dailyRevenue += item.quantity * item.priceUnitBrl;
           dailyCost += item.quantity * item.product.costUnit;
